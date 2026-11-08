@@ -1,0 +1,214 @@
+<!--
+  EXAMPLE: Intro section (§1 of any tutorial)
+  =============================================
+  Section 1 of a tutorial is structurally DIFFERENT from concept sections.
+  Its job:
+    - Set the goal (what the reader will be able to do)
+    - State the audience + prerequisites (what's assumed)
+    - Preview the structure (what's coming)
+    - Show the headline result (what success looks like)
+    - List the conventions used (color palette, callouts, glossary)
+
+  The 5-layer scaffold doesn't apply here — intro sections don't introduce
+  ONE concept; they orient the reader to the whole document.
+
+  Concrete demonstration: opening section of a web-service performance-optimization tutorial.
+-->
+
+<section id="s1-intro" class="section">
+
+  <h2 id="s1-intro-h">1. Introduction</h2>
+
+  <!-- ============================================================
+       GOAL — single most important paragraph in the document
+       ============================================================ -->
+
+  <p>
+    By the end of this tutorial, you will be able to <strong>apply a 4-stage performance recipe</strong>
+    that takes a slow, load-shedding JSON API and turns it into one that holds a
+    <strong>p99 under 200&nbsp;ms while sustaining 5,000&nbsp;req/s</strong> — without rewriting it in a
+    faster language. You'll know what each stage does, why we tuned its parameters the way we did,
+    what the bear traps are, and how to verify your service matches expectations after each stage.
+  </p>
+
+  <!-- ============================================================
+       AUDIENCE + PREREQUISITES — pin to top so reader self-selects
+       ============================================================ -->
+
+  <div class="callout">
+    <p class="callout-title"><strong>Audience and prerequisites</strong></p>
+    <p>This tutorial assumes you know:</p>
+    <ul>
+      <li><strong>HTTP service basics</strong> — request/response, status codes, JSON APIs.</li>
+      <li><strong>A relational database</strong> at the level of "what an index is and why a query can be slow."</li>
+      <li><strong>Basic load testing / the shell</strong> — running a load generator, reading latency percentiles.</li>
+    </ul>
+    <p>This tutorial does <strong>not</strong> assume:</p>
+    <ul>
+      <li>Familiarity with cache stampede protection, CDNs, or connection pools (we'll cover them).</li>
+      <li>Knowledge of any specific cache or CDN product — the recipe is vendor-neutral.</li>
+      <li>Distributed-systems theory (we stay concrete and measured).</li>
+    </ul>
+  </div>
+
+  <!-- ============================================================
+       HEADLINE RESULT — what success looks like, up front
+       ============================================================ -->
+
+  <div class="hero-kpis" style="margin-top: 24px;">
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">p99 latency</div>
+      <div class="kpi-value">140 ms</div>
+      <div class="kpi-note">−710 ms from baseline (850 → 140)</div>
+    </div>
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">Error rate at peak</div>
+      <div class="kpi-value">0.9%</div>
+      <div class="kpi-note">−21pp from baseline (22% → 0.9%)</div>
+    </div>
+    <div class="kpi-card kpi-mid">
+      <div class="kpi-label">Freshness (the trade)</div>
+      <div class="kpi-value">−10 s</div>
+      <div class="kpi-note">explicit cost of Stage 4's CDN TTL</div>
+    </div>
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">Throughput</div>
+      <div class="kpi-value">5,600 req/s</div>
+      <div class="kpi-note">6× baseline (900 → 5,600)</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PREVIEW — what's coming, with pipeline-mini for orientation
+       ============================================================ -->
+
+  <h3>How the tutorial is organized</h3>
+
+  <p>The recipe is a 4-stage pipeline (one of which is skipped — we'll explain why):</p>
+
+  <p class="pipeline-mini" aria-label="Recipe pipeline overview">
+    <span class="step">Stage 0: Profiled baseline</span>
+    <span class="step">Stage 1: Caching layer</span>
+    <span class="step skipped">Stage 2: Rust rewrite (skipped)</span>
+    <span class="step">Stage 3: DB indexing</span>
+    <span class="step">Stage 4: CDN + pool tuning</span>
+  </p>
+
+  <p>The tutorial walks each stage in order, with the same structure for each:</p>
+
+  <ol>
+    <li><strong>Intuition</strong> — plain English: what this stage does and why.</li>
+    <li><strong>Geometry</strong> — a diagram or animated SVG showing the mechanism visually.</li>
+    <li><strong>Config or pseudocode</strong> — the concrete parameters and logic.</li>
+    <li><strong>Worked example</strong> — real numbers from an actual run.</li>
+    <li><strong>Takeaway</strong> — what to remember, and what's coming next.</li>
+  </ol>
+
+  <!-- ============================================================
+       CONVENTIONS — color palette, callout types, glossary
+       ============================================================ -->
+
+  <h3>Conventions used in this tutorial</h3>
+
+  <p>The color palette is <em>semantic</em> — each role gets a consistent color
+  throughout. Once you've seen <span class="term-blue">the request</span> in blue,
+  every blue element in this document refers to the request path.</p>
+
+  <table>
+    <caption>Color → semantic role mapping</caption>
+    <thead>
+      <tr><th scope="col">Color</th><th scope="col">Role</th><th scope="col">Example terms</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="term-blue">●</span> blue</td><td>the request / hot path</td><td>request, origin call, hot key</td></tr>
+      <tr><td><span class="term-green">●</span> green</td><td>hit / success / fast path</td><td>cache hit, index hit, served-from-edge</td></tr>
+      <tr><td><span class="term-yellow">●</span> yellow</td><td>baseline / measured value</td><td>p50, mean, SLO target</td></tr>
+      <tr><td><span class="term-orange">●</span> orange</td><td>boundary / protection / retry</td><td>TTL, single-flight lock, backoff</td></tr>
+      <tr><td><span class="term-violet">●</span> violet</td><td>cost / weight / trade-off</td><td>staleness window, pool weight</td></tr>
+      <tr><td><span class="term-red">●</span> red</td><td>miss / failure / error</td><td>cache miss, 5xx, timeout</td></tr>
+    </tbody>
+  </table>
+
+  <p>Three callout types appear throughout:</p>
+
+  <div class="callout">
+    <p class="callout-title"><strong>Definitions and learning objectives</strong></p>
+    <p>Standard callouts (blue border) hold definitions, "what you'll learn" markers,
+    and side notes.</p>
+  </div>
+
+  <div class="callout worked-example">
+    <p class="callout-title"><strong>Worked examples</strong> (green border)</p>
+    <p>Concrete numbers from a real run. Every stage has at least one. Don't skip these — they're
+    the only way to verify you understand the mechanism.</p>
+  </div>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>⚠ Bear traps</strong> (yellow border)</p>
+    <p>Things we got wrong the first time. We list them so you can avoid them.
+    Take these seriously — each one cost us hours.</p>
+  </div>
+
+  <!-- ============================================================
+       SUGGESTED READING ORDER — for different reader types
+       ============================================================ -->
+
+  <h3>Suggested reading order</h3>
+
+  <ul>
+    <li><strong>If you want to apply the recipe end-to-end:</strong> read straight through, §1 → §11.
+      Skip the appendix unless you hit a problem.</li>
+    <li><strong>If you only want to understand caching:</strong> read §3 (latency fundamentals) and §6 (Stage 1 caching).
+      Skip §4-§5 (profiling) and §7 (why the rewrite was skipped).</li>
+    <li><strong>If you want to skip one stage:</strong> read the stage's section + §10 (results) + §11 (bear traps).</li>
+    <li><strong>If you're just curious about results:</strong> §10 alone tells the story.</li>
+  </ul>
+
+  <p>Estimated reading time: 90-120 minutes for the full document at normal pace. Worked-example
+  re-derivations and animation observation add ~15 min each.</p>
+
+  <p><strong>Ready?</strong> §2 sets up the service and load-testing stack you'll need.</p>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     Intro section structure (what's DIFFERENT from concept sections):
+
+     1. NO 5-layer scaffold. Intro sections orient, they don't teach a concept.
+
+     2. GOAL paragraph is THE LOAD-BEARING ELEMENT.
+        One sentence: "by the end you'll be able to...". Don't bury this.
+        Without it, the reader can't tell if this tutorial is for them.
+
+     3. AUDIENCE BOX uses BOTH "assumes" and "does not assume".
+        The negative list is just as important. Without it, readers feel they need
+        unstated prerequisites and bounce.
+
+     4. HEADLINE RESULT comes UP FRONT.
+        KPI cards showing what success looks like. Sets the bar; gives the reader
+        something to look forward to verifying.
+
+     5. CONVENTIONS list — color palette, callout types, glossary explanation.
+        Without this, the reader has to learn the visual language on the fly.
+
+     6. SUGGESTED READING ORDER for different reader types.
+        Different readers will use the tutorial differently. Tell them which
+        paths work for which goals — readers self-route.
+
+     7. ESTIMATED TIME.
+        "90 minutes" is more useful than "long". Sets expectations.
+
+     8. END WITH A FORWARD POINTER.
+        "§2 sets up..." — keeps reader moving. Don't end the intro on a flat note.
+
+     What to AVOID in intro sections:
+       - Hype ("revolutionary", "groundbreaking") — undermines technical credibility
+       - Excessive setup before getting to the goal
+       - Discussing methodology before stating WHAT the tutorial covers
+       - Forgetting to mention bear traps exist (readers won't be braced)
+
+     COMPLEMENTARY to: section-appendix.html (closing structure).
+     ============================================================================ -->

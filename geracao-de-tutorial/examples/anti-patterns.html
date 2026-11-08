@@ -1,0 +1,247 @@
+<!--
+  EXAMPLE: Anti-pattern gallery (what BAD looks like)
+  =====================================================
+  This file is REFERENCE material, not a copy-into-tutorial template. It
+  illustrates common failure modes with side-by-side BAD / GOOD comparisons
+  so a fresh Claude (or human) can recognize the failure modes when
+  reviewing tutorial drafts.
+
+  Pair each BAD/GOOD with: WHAT IS WRONG, WHY IT'S WRONG, and HOW TO FIX.
+-->
+
+<section id="anti-patterns" class="section">
+
+  <h2>Anti-pattern gallery — what NOT to do, and why</h2>
+
+  <p>Each row shows a common pattern that LOOKS reasonable but fails for a specific reason.
+  Use this as a checklist when reviewing your own draft.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 1: probability bars not summing to 1
+       ============================================================ -->
+
+  <h3>1. Visual encoding doesn't match the stated math</h3>
+
+  <p><strong>BAD:</strong> bars labeled as probabilities, claiming P(A)=0.30 and P(B)=0.40, but
+  the bar heights are 30 px and 80 px on a 100 px axis (encoding 0.30 and 0.80).</p>
+
+  <p><strong>GOOD:</strong> bars satisfying probability conservation — 0.30 → 30 px, 0.40 → 40 px,
+  remaining 0.30 distributed across other outcomes summing to exactly 100 px.</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0;">
+    <div>
+      <p class="muted" style="color: #ef4444;"><strong>✗ BAD — heights don't match claimed probabilities</strong></p>
+      <svg viewBox="0 0 280 160" style="width:100%; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+        <line x1="20" y1="30" x2="20" y2="130" stroke="#2a2f42"/>
+        <line x1="20" y1="130" x2="260" y2="130" stroke="#2a2f42"/>
+        <!-- A: claimed 0.30, drawn 30px = 0.30 ✓ -->
+        <rect x="40" y="100" width="40" height="30" fill="#7aa2f7" opacity="0.85"/>
+        <text x="60" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">A</text>
+        <text x="60" y="95" text-anchor="middle" fill="#7aa2f7" font-family="ui-monospace" font-size="10" font-weight="700">0.30</text>
+        <!-- B: claimed 0.40, drawn 80px = 0.80 ✗ -->
+        <rect x="100" y="50" width="40" height="80" fill="#ef4444" opacity="0.85"/>
+        <text x="120" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">B</text>
+        <text x="120" y="45" text-anchor="middle" fill="#ef4444" font-family="ui-monospace" font-size="10" font-weight="700">0.40</text>
+        <text x="120" y="58" text-anchor="middle" fill="#ef4444" font-family="ui-monospace" font-size="9" font-style="italic">(drawn=0.80!)</text>
+        <!-- C: claimed 0.30, drawn 15px = 0.15 ✗ -->
+        <rect x="160" y="115" width="40" height="15" fill="#fbbf24" opacity="0.85"/>
+        <text x="180" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">C</text>
+        <text x="180" y="110" text-anchor="middle" fill="#fbbf24" font-family="ui-monospace" font-size="10" font-weight="700">0.30</text>
+        <text x="180" y="123" text-anchor="middle" fill="#ef4444" font-family="ui-monospace" font-size="9" font-style="italic">(drawn=0.15)</text>
+        <text x="140" y="20" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="11" font-weight="600">sum=1.25 ≠ 1.0</text>
+      </svg>
+    </div>
+    <div>
+      <p class="muted" style="color: #10b981;"><strong>✓ GOOD — probability conservation</strong></p>
+      <svg viewBox="0 0 280 160" style="width:100%; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+        <line x1="20" y1="30" x2="20" y2="130" stroke="#2a2f42"/>
+        <line x1="20" y1="130" x2="260" y2="130" stroke="#2a2f42"/>
+        <!-- A: 0.30 → 30 px -->
+        <rect x="40" y="100" width="40" height="30" fill="#7aa2f7" opacity="0.85"/>
+        <text x="60" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">A</text>
+        <text x="60" y="95" text-anchor="middle" fill="#7aa2f7" font-family="ui-monospace" font-size="10" font-weight="700">0.30</text>
+        <!-- B: 0.40 → 40 px -->
+        <rect x="100" y="90" width="40" height="40" fill="#10b981" opacity="0.85"/>
+        <text x="120" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">B</text>
+        <text x="120" y="85" text-anchor="middle" fill="#10b981" font-family="ui-monospace" font-size="10" font-weight="700">0.40</text>
+        <!-- C: 0.30 → 30 px -->
+        <rect x="160" y="100" width="40" height="30" fill="#fbbf24" opacity="0.85"/>
+        <text x="180" y="146" text-anchor="middle" fill="#e6e8ee" font-family="ui-monospace" font-size="10">C</text>
+        <text x="180" y="95" text-anchor="middle" fill="#fbbf24" font-family="ui-monospace" font-size="10" font-weight="700">0.30</text>
+        <text x="140" y="20" text-anchor="middle" fill="#10b981" font-family="system-ui" font-size="11" font-weight="600">sum=1.0 ✓</text>
+      </svg>
+    </div>
+  </div>
+
+  <p><strong>The fix.</strong> Always compute bar heights from the claimed values: <code>height = value × axis_height</code>.
+  Verify by summing: ALL probability bars must sum to <code>axis_height</code> within 1 px. Bear trap B.7 in SKILL.md.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 2: invalid SMIL textContent
+       ============================================================ -->
+
+  <h3>2. SMIL <code>&lt;animate attributeName="textContent"&gt;</code></h3>
+
+  <p><strong>BAD:</strong> using SMIL to animate a text element's textContent. Silently fails in all browsers
+  because <code>textContent</code> is a DOM property, not an XML attribute that SMIL can animate.</p>
+
+<pre style="color: #ef4444;"><code>&lt;!-- ✗ INVALID — silently fails --&gt;
+&lt;text x="100" y="50"&gt;
+  &lt;animate attributeName="textContent"
+           values="0.50;0.75;1.00"
+           dur="3s" repeatCount="indefinite"/&gt;
+  fallback text
+&lt;/text&gt;</code></pre>
+
+  <p><strong>GOOD:</strong> three stacked text elements at the same position, each fading in during its phase
+  via CSS @keyframes opacity.</p>
+
+<pre style="color: #10b981;"><code>&lt;!-- ✓ VALID — CSS-based fade --&gt;
+&lt;style&gt;
+  @keyframes show-A { 0%,30% {opacity:1} 35%,100% {opacity:0} }
+  @keyframes show-B { 0%,30% {opacity:0} 35%,65% {opacity:1} 70%,100% {opacity:0} }
+  @keyframes show-C { 0%,65% {opacity:0} 70%,95% {opacity:1} }
+  .phase-A { animation: show-A 3s linear infinite; }
+  .phase-B { animation: show-B 3s linear infinite; opacity: 0; }
+  .phase-C { animation: show-C 3s linear infinite; opacity: 0; }
+&lt;/style&gt;
+&lt;text class="phase-A" x="100" y="50"&gt;0.50&lt;/text&gt;
+&lt;text class="phase-B" x="100" y="50"&gt;0.75&lt;/text&gt;
+&lt;text class="phase-C" x="100" y="50"&gt;1.00&lt;/text&gt;</code></pre>
+
+  <p><strong>The fix.</strong> Never use <code>attributeName="textContent"</code>. Always use stacked text + CSS opacity fade.
+  Bear trap B.2 in SKILL.md. <code>validate.py</code> check 9 catches this.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 3: :root in SVG <style>
+       ============================================================ -->
+
+  <h3>3. <code>:root</code> selector inside SVG <code>&lt;style&gt;</code></h3>
+
+  <p><strong>BAD:</strong> defining CSS variables in a <code>:root { ... }</code> block inside an SVG's
+  <code>&lt;style&gt;</code> tag. The <code>:root</code> selector matches the page's <code>&lt;html&gt;</code>
+  element regardless of context, so SVG-scoped variables LEAK to the entire document.</p>
+
+<pre style="color: #ef4444;"><code>&lt;svg id="anim-foo"&gt;
+  &lt;style&gt;
+    :root {                        &lt;!-- ✗ LEAKS to entire page --&gt;
+      --bg: #0f1117;
+      --text: #e6e8ee;
+    }
+  &lt;/style&gt;
+  ...
+&lt;/svg&gt;</code></pre>
+
+  <p><strong>GOOD:</strong> scope variables to a unique <code>#id</code> selector (the SVG's id or an
+  inner <code>&lt;g&gt;</code> with id).</p>
+
+<pre style="color: #10b981;"><code>&lt;svg id="anim-foo"&gt;
+  &lt;style&gt;
+    #anim-foo {                    &lt;!-- ✓ scoped to this SVG only --&gt;
+      --bg: #0f1117;
+      --text: #e6e8ee;
+    }
+  &lt;/style&gt;
+  ...
+&lt;/svg&gt;</code></pre>
+
+  <p><strong>The fix.</strong> Bear trap B.1. <code>validate.py</code> check 8 catches this.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 4: color overload
+       ============================================================ -->
+
+  <h3>4. Same color reused for two distinct concepts in one figure</h3>
+
+  <p><strong>BAD:</strong> using yellow #fbbf24 for both the spread band AND the mid-value dots in the
+  same measurements figure. The yellow background of the band makes the yellow dots invisible.</p>
+
+  <p><strong>GOOD:</strong> distinct hues for distinct semantic roles. Spread band stays muted blue;
+  value dots remain yellow.</p>
+
+  <p><strong>The fix.</strong> Bear trap B.9. No automated check; humans must spot this during the
+  per-element review (Phase 7).</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 5: low-contrast colors on light mode
+       ============================================================ -->
+
+  <h3>5. Dark-mode colors used on light mode without overrides</h3>
+
+  <p><strong>BAD:</strong> using <code>--term-yellow: #fbbf24</code> (yellow) for prose spans on
+  white background. WCAG contrast is ~1.6:1 — fails AA (4.5:1 required).</p>
+
+  <p><strong>GOOD:</strong> light-mode override switching <code>--term-yellow</code> to <code>#a16207</code>
+  (darker yellow) with ~7:1 contrast on white.</p>
+
+  <p><strong>The fix.</strong> Bear trap B.10. Use the canonical light-mode hex from
+  <code>reference/color-palette.md</code>. No automated check; verify manually with a contrast calculator.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 6: missing worked example
+       ============================================================ -->
+
+  <h3>6. Formula presented without a worked example</h3>
+
+  <p><strong>BAD:</strong> "The weighted average is computed as mean = sum(w_i × x_i) / sum(w_i). This
+  combines the values according to their weights." Then immediately moves to the next concept.</p>
+
+  <p><strong>GOOD:</strong> the formula PLUS a worked-example callout with specific arrays, multiplication
+  step-by-step, and a verified numerical result.</p>
+
+  <p><strong>The fix.</strong> Pedagogical-review.js dimension 2 catches this. Every display formula must
+  have a <code>.callout.worked-example</code> nearby.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 7: glossary term defined but never used
+       ============================================================ -->
+
+  <h3>7. Glossary term defined but never linked from prose</h3>
+
+  <p><strong>BAD:</strong> appendix defines <code>&lt;dt id="g-irrelevance"&gt;Irrelevance&lt;/dt&gt;</code>
+  but no <code>&lt;a class="gloss" href="#g-irrelevance"&gt;</code> appears anywhere in the document.
+  Reader who clicks "back" from the glossary lands on a page that doesn't reference the term.</p>
+
+  <p><strong>GOOD:</strong> every glossary entry has at least 2 inline link sites in the prose. Terms
+  that appear &lt;2 times don't deserve a glossary entry.</p>
+
+  <p><strong>The fix.</strong> Pedagogical-review.js dimension 4 catches this. Run before shipping.</p>
+
+  <!-- ============================================================
+       ANTI-PATTERN 8: hedging language in pedagogy
+       ============================================================ -->
+
+  <h3>8. Hedging language in conceptual explanations</h3>
+
+  <p><strong>BAD:</strong> "We might think of market share as... well, in some sense it's just a set of
+  fractions. Although there are subtleties..."</p>
+
+  <p><strong>GOOD:</strong> "Market share is a probability distribution over the 5 firms, with the
+  fractions summing to 1. Subtleties are flagged with footnotes."</p>
+
+  <p><strong>The fix.</strong> Direct, technical, unhedged voice — see SKILL.md Phase 1.4. No automated
+  check; humans spot this during pedagogical review.</p>
+
+</section>
+
+
+<!-- ============================================================================
+     HOW TO USE THIS FILE
+     ============================================================================
+     This file is REFERENCE material — do NOT copy it into your tutorial. Instead:
+
+     1. When authoring, glance through periodically to catch yourself before
+        committing one of these patterns.
+
+     2. When reviewing (Phases 6-8 of SKILL.md), use it as a checklist. For each
+        anti-pattern, scan the draft for instances.
+
+     3. When training a new author / agent on geracao-de-tutorial, share this file
+        FIRST. Anti-patterns teach by negative example faster than positive
+        examples teach by example.
+
+     The list above covers 8 high-frequency anti-patterns. There are more in
+     SKILL.md Bear Traps B.4, B.5, B.6, B.8, B.11, B.12, B.13, B.14 — those are
+     covered there because they don't have visual BAD/GOOD pairs (they're more
+     about code structure).
+     ============================================================================ -->

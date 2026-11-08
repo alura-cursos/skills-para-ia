@@ -1,0 +1,157 @@
+<!--
+  EXAMPLE: Worked-example callout for a SYSTEM / ARCHITECTURE concept
+  ====================================================================
+  What Layer 4 looks like for a system-design concept: trace ONE specific
+  request (or transaction, or event) through every component, showing the
+  cost (bytes, latency, CPU) at each hop.
+
+  The structure:
+    1. SETUP — name the request + originating context
+    2. HOP-BY-HOP TABLE — one row per component, with action + cost + cumulative
+    3. TOTAL + COMPARISON to alternatives (cache hit vs miss, etc.)
+    4. SCENARIO VARIATION — what changes if a key parameter shifts
+
+  Use this template for: HTTP request lifecycles, database query plans,
+  distributed transactions, message-bus pipelines, deployment flows.
+-->
+
+<div class="callout worked-example">
+  <p class="callout-title"><strong>Worked example: tracing a Stripe webhook through our queue → worker → database pipeline</strong></p>
+
+  <p><strong>Setup.</strong> Stripe sends <code>POST /webhooks/payment_succeeded</code> with a 2KB JSON
+  payload. Our system: webhook endpoint receives, drops onto SQS, worker pulls and processes
+  (updates DB, sends notification, returns).</p>
+
+  <table>
+    <caption>Per-hop trace with latency and cumulative cost</caption>
+    <thead>
+      <tr>
+        <th scope="col">Hop</th>
+        <th scope="col">Component</th>
+        <th scope="col">Action</th>
+        <th scope="col">Bytes</th>
+        <th scope="col">Latency</th>
+        <th scope="col">Cumulative</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Stripe → ALB</td>
+        <td>TLS handshake (cached cert), POST body received</td>
+        <td>2,048</td>
+        <td>45 ms</td>
+        <td>45 ms</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>ALB → webhook svc</td>
+        <td>Route by path, forward to one of 3 replicas</td>
+        <td>2,048</td>
+        <td>3 ms</td>
+        <td>48 ms</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Webhook svc</td>
+        <td>Verify Stripe-Signature HMAC; parse JSON</td>
+        <td>2,048</td>
+        <td>5 ms</td>
+        <td>53 ms</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Webhook svc → SQS</td>
+        <td>SendMessage with payload + dedup key</td>
+        <td>2,128</td>
+        <td>12 ms</td>
+        <td>65 ms</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Webhook svc → Stripe</td>
+        <td>Return 200 OK to acknowledge receipt</td>
+        <td>0</td>
+        <td>2 ms</td>
+        <td><strong>67 ms (Stripe waits this long)</strong></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Worker</td>
+        <td>SQS long-poll picks up message (avg 100ms delay)</td>
+        <td>2,128</td>
+        <td>100 ms</td>
+        <td>167 ms</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Worker → DB</td>
+        <td>UPDATE invoice SET paid=true (indexed lookup)</td>
+        <td>~200</td>
+        <td>8 ms</td>
+        <td>175 ms</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Worker → SES</td>
+        <td>Queue email notification</td>
+        <td>~3,000</td>
+        <td>30 ms</td>
+        <td>205 ms</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Worker → SQS</td>
+        <td>DeleteMessage (acknowledged)</td>
+        <td>~100</td>
+        <td>6 ms</td>
+        <td>211 ms</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Total: 211 ms end-to-end.</strong> Stripe's perspective sees 67 ms (we ack immediately
+  after enqueueing). Customer's invoice is marked paid by 175 ms; notification email is queued by
+  205 ms.</p>
+
+  <p><strong>Scenario variation — what if SQS is slow?</strong> If SQS receive latency spikes to
+  2 seconds (instead of 100 ms), the user-visible "paid" status updates 2 seconds later — but Stripe
+  still sees a 67ms ack, so they don't retry the webhook. Decoupling the ack from the work
+  (steps 4-5 vs 6-9) is what makes this resilient.</p>
+
+  <p><strong>Scenario variation — what if the DB is down at hop 7?</strong> Worker fails to ack the
+  SQS message (no DeleteMessage). After SQS visibility timeout (30s default), another worker re-pulls.
+  After 5 failed attempts, message goes to dead-letter queue. <em>Total user-visible delay: depends
+  on how long the DB stays down + visibility timeout.</em></p>
+</div>
+
+
+<!-- ============================================================================
+     COMMENTARY
+     ============================================================================
+     System worked-example pattern:
+
+     1. PICK A SPECIFIC REQUEST or transaction. Not "a typical user action" —
+        a concrete one with a specific name.
+
+     2. TRACE EVERY HOP. Don't skip "obvious" steps. Each row in the table
+        forces you to think about whether you understand what happens there.
+
+     3. SHOW CUMULATIVE COST. The reader's main question is "where is the time
+        going?" The cumulative column answers it at a glance.
+
+     4. CALL OUT WHERE THE EXTERNAL SYSTEM "BREAKS OFF".
+        In this example, Stripe sees only 67ms because we ack early. That's
+        the key architectural decision; surface it in the table.
+
+     5. END WITH 2-3 SCENARIO VARIATIONS.
+        "What if X is slow?" / "What if Y is down?" — these turn the worked
+        example into pedagogy, not just documentation.
+
+     Trace formats by genre:
+       - HTTP REQUEST: hops are network components + processing stages
+       - DATABASE QUERY: hops are query-plan steps with row counts
+       - DISTRIBUTED TXN: hops are participants + 2PC phases
+       - MESSAGE PIPELINE: hops are producers, brokers, consumers
+       - DEPLOYMENT: hops are CI stages, infra steps, health checks
+     ============================================================================ -->

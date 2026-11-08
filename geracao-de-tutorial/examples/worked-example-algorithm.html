@@ -1,0 +1,123 @@
+<!--
+  EXAMPLE: Worked-example callout for an ALGORITHM
+  =================================================
+  What Layer 4 looks like for an algorithm concept: trace ONE specific input
+  through every iteration, showing state at each step.
+
+  The structure:
+    1. SETUP — name the input + initial state
+    2. STATE TABLE — one row per iteration, columns are state variables
+    3. RESULT — verified output + comparison to worst-case complexity
+    4. "TRY THIS" — invite the reader to trace a variant input
+
+  Use this template for any algorithm: sorting, searching, traversal, DP.
+-->
+
+<div class="callout worked-example">
+  <p class="callout-title"><strong>Worked example: quicksort on <code>[3, 6, 1, 8, 2, 4]</code></strong></p>
+
+  <p>Input: <code>arr = [3, 6, 1, 8, 2, 4]</code>. Pivot strategy: last element. Initial call:
+  <code>quicksort(arr, lo=0, hi=5)</code>.</p>
+
+  <table>
+    <caption>Recursive call stack with state at each level</caption>
+    <thead>
+      <tr>
+        <th scope="col">Step</th>
+        <th scope="col">Call</th>
+        <th scope="col">Array slice</th>
+        <th scope="col">Pivot</th>
+        <th scope="col">After partition</th>
+        <th scope="col">Pivot index</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>quicksort(arr, 0, 5)</td>
+        <td><code>[3, 6, 1, 8, 2, 4]</code></td>
+        <td>4 (last)</td>
+        <td><code>[3, 1, 2, 4, 8, 6]</code></td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>quicksort(arr, 0, 2) <em>(left of pivot)</em></td>
+        <td><code>[3, 1, 2]</code></td>
+        <td>2 (last)</td>
+        <td><code>[1, 2, 3]</code></td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>quicksort(arr, 0, 0)</td>
+        <td><code>[1]</code></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>quicksort(arr, 2, 2)</td>
+        <td><code>[3]</code></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>quicksort(arr, 4, 5) <em>(right of step-1 pivot)</em></td>
+        <td><code>[8, 6]</code></td>
+        <td>6 (last)</td>
+        <td><code>[6, 8]</code></td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>quicksort(arr, 5, 5)</td>
+        <td><code>[8]</code></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Result.</strong> Final array <code>[1, 2, 3, 4, 6, 8]</code> — sorted ✓.
+  6 partition operations on an N=6 input. Total comparisons: ~12 (each partition does N
+  comparisons). Worst-case for quicksort is O(N²), but on this small balanced input we get
+  O(N log N) ≈ 6 × log₂(6) ≈ 15.5 comparisons, which is close to what we observed.</p>
+
+  <p><strong>Try this:</strong> trace quicksort on <code>[1, 2, 3, 4, 5]</code> (already sorted,
+  pivot = last). You'll get the worst case: every partition leaves all-but-one element on one side,
+  giving N² total comparisons. This is why <em>random pivot selection</em> matters in practice.</p>
+</div>
+
+
+<!-- ============================================================================
+     COMMENTARY
+     ============================================================================
+     Algorithm worked-example pattern:
+
+     1. NAME THE INPUT.
+        "[3, 6, 1, 8, 2, 4]" — concrete, not "arr" or "the array".
+
+     2. SHOW STATE AT EVERY ITERATION OR RECURSIVE CALL.
+        Use a table with one row per step. Columns are state variables (lo, hi, pivot, etc.).
+
+     3. CALL OUT RECURSION VISUALLY.
+        Indentation in the "Call" column or italic "(left of pivot)" annotations help the
+        reader follow the call stack.
+
+     4. VERIFY THE RESULT against the algorithm's complexity.
+        Don't just say "sorted." Count comparisons and compare to worst-case.
+
+     5. END WITH A "TRY THIS" INVITING A WORST-CASE TRACE.
+        Algorithms behave differently on different inputs; the reader should explore.
+
+     Trace formats:
+       - LINEAR ALGORITHMS: one row per loop iteration
+       - RECURSIVE: one row per call, with parent-child indicated
+       - DP: 2D grid showing the DP array populating cell by cell
+       - GRAPH: one row per BFS/DFS step + adjacency state
+     ============================================================================ -->

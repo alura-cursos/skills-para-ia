@@ -1,0 +1,128 @@
+<!--
+  EXAMPLE: Worked-example callout for a RECIPE / OPTIMIZATION run
+  ==============================================================
+  What Layer 4 looks like for a methodology / recipe concept: show ONE
+  specific run with real parameters, real metric trajectories, real
+  cost, and at least one bear-trap encountered.
+
+  The structure:
+    1. SETUP — environment, stack, source config
+    2. EXECUTION — wall-clock, rollout strategy
+    3. METRIC TRAJECTORY — one row per change / eval point
+    4. COST — time and dollar equivalent
+    5. BEAR TRAP if encountered (the "we hit X mid-run" moment)
+
+  Use this template for: optimization stages, parameter studies,
+  ablation runs, migration recipes, load-test campaigns.
+-->
+
+<div class="callout worked-example">
+  <p class="callout-title"><strong>Worked example: the actual Stage 3 DB-indexing run</strong></p>
+
+  <p><strong>Setup.</strong> The Stage 1 cache is live (p99 210&nbsp;ms, p50 135&nbsp;ms, 2.5% peak error).
+  Stack: Postgres 16 behind PgBouncer, app in Go 1.23. Source config: <code>stage1-cache-v3</code>. Target:
+  the cache-<em>miss</em> path — make a miss cheap so the rare stampede that slips through does little damage,
+  and reclaim the p50 the single-flight lock cost.</p>
+
+  <p><strong>Execution.</strong> Applied 2 indexes + 1 query rewrite via online migrations
+  (<code>CREATE INDEX CONCURRENTLY</code>, no table locks). Re-ran the CI benchmark (500&nbsp;req/s) after
+  each change. ~35 minutes total including index build time.</p>
+
+  <table>
+    <caption>Per-change metric movement with comparison to the Stage 1 baseline</caption>
+    <thead>
+      <tr>
+        <th scope="col">Change</th>
+        <th scope="col">p99 (ms)</th>
+        <th scope="col">p50 (ms)</th>
+        <th scope="col">Throughput (req/s)</th>
+        <th scope="col">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Stage 1 baseline (cache only)</td>
+        <td>210</td>
+        <td>135</td>
+        <td>4,200</td>
+        <td>Stage 1 output (input to this stage)</td>
+      </tr>
+      <tr>
+        <td>+ idx products(category_id, active)</td>
+        <td>192</td>
+        <td>108</td>
+        <td>4,500</td>
+        <td>biggest miss-path query</td>
+      </tr>
+      <tr>
+        <td>+ idx order_items(product_id)</td>
+        <td>183</td>
+        <td>88</td>
+        <td>4,650</td>
+        <td>fixed the N+1 on product detail</td>
+      </tr>
+      <tr>
+        <td>+ batch-load rewrite (final)</td>
+        <td><strong>175</strong></td>
+        <td><strong>68</strong></td>
+        <td><strong>4,800</strong></td>
+        <td>SHIPPED — Stage 4 input</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Outcome.</strong> p99: 210 → 175&nbsp;ms and p50: 135 → 68&nbsp;ms — Stage 3 reclaimed the
+  single-flight overhead from Stage 1 (p50 is now well below the original 120&nbsp;ms baseline) by making the
+  miss path ~2× faster. A cache miss now costs 68&nbsp;ms instead of ~300&nbsp;ms, so the rare stampede that
+  slips through does far less damage. Throughput kept climbing to 4,800&nbsp;req/s.</p>
+
+  <p><strong>Cost.</strong> Zero new hardware — the 2 indexes add ≈ 220&nbsp;MB of storage, built online in
+  ~20&nbsp;min. Effectively free for halving p50.</p>
+
+  <div style="background: rgba(239,68,68,0.05); border-left: 3px solid #ef4444; padding: 10px 14px; margin-top: 12px; border-radius: 0 6px 6px 0;">
+    <p style="margin: 0; font-weight: 600; color: #ef4444;">⚠ Bear trap encountered mid-run</p>
+    <p style="margin: 6px 0 0;">Right after the batch-load rewrite, the search cache silently went cold:
+    hit rate on <code>search:*</code> dropped to <code>0%</code>, origin QPS jumped to <code>100%</code> of
+    search traffic, and search p99 climbed 4× — three canary signals of a silent cache bypass. Cause: the
+    rewrite changed how the query string is normalized before hashing, so the same user query now produced a
+    NEW <code>qhash</code> → every lookup computed a fresh key → every request missed → every request hit the
+    (now-indexed but still loaded) origin. Every key was unique; hit rate 0 everywhere. Fix: pinned key
+    derivation to a versioned <code>cacheKey(normalize(q))</code> and bumped the namespace to <code>:v4</code>.
+    Cost of debug: ~2 hours. Documented in the bear-trap appendix.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================================
+     COMMENTARY
+     ============================================================================
+     Recipe worked-example pattern:
+
+     1. NAME THE REAL RUN. Include the environment, the versions, the source config.
+        "stage1-cache-v3" is more useful than "the cached version".
+
+     2. SHOW THE ACTUAL TRAJECTORY of metrics across eval points.
+        Reader needs to know "did the metric move monotonically, or U-shape, or jagged?"
+
+     3. INCLUDE COST in both wall-clock and dollars (or "free" when it is).
+        Replicators need to know "can I afford this?"
+
+     4. DOCUMENT THE BEAR TRAP if there was one.
+        Honest recipes document what went wrong + how it was fixed. This is the
+        most teaching-dense part of any recipe; don't bury it.
+
+     5. CLOSE WITH FORWARD-LINK to the next stage that consumes this output.
+        "SHIPPED — Stage 4 input" tells the reader where to look next.
+
+     What makes a recipe worked example work pedagogically:
+       - REAL NUMBERS. No "let's say latency dropped by N percent." Actual numbers.
+       - REAL WALL-CLOCK. Reader needs to plan the change window.
+       - REAL CANARY SIGNALS. "hit rate 0 + origin QPS 100% means X" teaches debugging.
+
+     Patterns that fit:
+       - Individual optimization stages
+       - Parameter studies (vary one knob)
+       - Ablation runs (skip one component)
+       - Migration recipes (v1 → v2)
+       - Performance optimization runs (before/after profiling)
+     ============================================================================ -->

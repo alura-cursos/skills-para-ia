@@ -1,0 +1,190 @@
+<!--
+  EXAMPLE: UML-style sequence diagram
+  ====================================
+  Static figure showing message exchanges between actors over TIME. Each
+  actor is a vertical lifeline; messages are horizontal arrows between
+  lifelines, ordered top-to-bottom = first-to-last.
+
+  Concrete example: a 2-phase commit (2PC) protocol across a coordinator
+  and two participants. Shows the prepare/commit phases with timestamps,
+  and what happens at the failure point.
+
+  Use when:
+    - Teaching a protocol with discrete message exchanges
+    - Showing distributed transaction flows
+    - Explaining authentication / authorization handshakes
+    - Documenting request-response chains across services
+-->
+
+<figure role="figure" aria-labelledby="fig-seq-cap" aria-describedby="fig-seq-desc">
+<svg role="img"
+     aria-labelledby="fig-seq-title fig-seq-desc"
+     viewBox="0 0 820 420"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-seq-title">Two-phase commit protocol sequence diagram</title>
+  <desc id="fig-seq-desc">A UML sequence diagram showing three actors as vertical lifelines:
+    Coordinator on the left, Participant A in the middle, Participant B on the right. Messages
+    flow as horizontal arrows top-to-bottom in time order. Phase 1 (Prepare): Coordinator sends
+    PREPARE to both participants; both respond VOTE-YES. Phase 2 (Commit): Coordinator sends
+    COMMIT to both; both ACK and finalize. A dashed annotation shows where Participant B would
+    crash mid-protocol and how recovery proceeds.</desc>
+
+  <style>
+    #fig-seq-svg .lifeline { stroke: #2a2f42; stroke-width: 1; stroke-dasharray: 4 4; }
+    #fig-seq-svg .actor    { stroke: #7aa2f7; stroke-width: 2; fill: #1c2030; rx: 4; }
+    #fig-seq-svg .actor-coord { stroke: #fbbf24; }
+    #fig-seq-svg .activation { fill: #7aa2f7; opacity: 0.25; }
+    #fig-seq-svg .msg     { stroke: #e6e8ee; stroke-width: 1.5; fill: none; }
+    #fig-seq-svg .msg-async { stroke-dasharray: 5 3; }
+    #fig-seq-svg .msg-fail { stroke: #ef4444; stroke-width: 1.5; }
+    #fig-seq-svg .actor-lbl { font-family: system-ui, sans-serif; fill: #e6e8ee; font-size: 13px; font-weight: 600; text-anchor: middle; }
+    #fig-seq-svg .msg-lbl   { font-family: ui-monospace, monospace; fill: #e6e8ee; font-size: 11px; }
+    #fig-seq-svg .ts        { font-family: ui-monospace, monospace; fill: #fbbf24; font-size: 10px; text-anchor: end; }
+    #fig-seq-svg .muted     { font-family: system-ui, sans-serif; fill: #8d94a8; font-size: 11px; }
+    #fig-seq-svg .phase-lbl { font-family: system-ui, sans-serif; fill: #fbbf24; font-size: 12px; font-style: italic; }
+  </style>
+
+  <defs>
+    <marker id="arr-seq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e6e8ee"/>
+    </marker>
+    <marker id="arr-seq-fail" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <g id="fig-seq-svg">
+
+    <text x="20" y="24" font-family="system-ui,sans-serif" fill="#e6e8ee" font-size="13" font-weight="600">
+      Two-phase commit (2PC) — message sequence
+    </text>
+
+    <!-- =================== ACTORS (vertical lifelines) =================== -->
+    <!-- 3 lifelines at x = 160, 410, 660 -->
+
+    <!-- Coordinator -->
+    <rect class="actor actor-coord" x="100" y="48" width="120" height="32"/>
+    <text x="160" y="69" class="actor-lbl" fill="#fbbf24">Coordinator</text>
+    <line class="lifeline" x1="160" y1="80" x2="160" y2="380"/>
+
+    <!-- Participant A -->
+    <rect class="actor" x="350" y="48" width="120" height="32"/>
+    <text x="410" y="69" class="actor-lbl" fill="#7aa2f7">Participant A</text>
+    <line class="lifeline" x1="410" y1="80" x2="410" y2="380"/>
+
+    <!-- Participant B -->
+    <rect class="actor" x="600" y="48" width="120" height="32"/>
+    <text x="660" y="69" class="actor-lbl" fill="#7aa2f7">Participant B</text>
+    <line class="lifeline" x1="660" y1="80" x2="660" y2="380"/>
+
+    <!-- =================== PHASE 1: PREPARE =================== -->
+    <text x="730" y="105" class="phase-lbl">Phase 1: PREPARE</text>
+
+    <!-- t=0: PREPARE coord → A -->
+    <text x="60" y="124" class="ts">t=0</text>
+    <line class="msg" x1="160" y1="120" x2="410" y2="120" marker-end="url(#arr-seq)"/>
+    <text x="285" y="115" text-anchor="middle" class="msg-lbl">PREPARE(tx_id=42)</text>
+
+    <!-- Activation on A -->
+    <rect class="activation" x="406" y="120" width="8" height="50"/>
+
+    <!-- t=10: VOTE-YES A → coord -->
+    <text x="60" y="174" class="ts">t=10</text>
+    <line class="msg" x1="410" y1="170" x2="160" y2="170" marker-end="url(#arr-seq)"/>
+    <text x="285" y="165" text-anchor="middle" class="msg-lbl" fill="#10b981">VOTE-YES</text>
+
+    <!-- t=15: PREPARE coord → B -->
+    <text x="60" y="194" class="ts">t=15</text>
+    <line class="msg" x1="160" y1="190" x2="660" y2="190" marker-end="url(#arr-seq)"/>
+    <text x="410" y="185" text-anchor="middle" class="msg-lbl">PREPARE(tx_id=42)</text>
+
+    <!-- Activation on B -->
+    <rect class="activation" x="656" y="190" width="8" height="50"/>
+
+    <!-- t=22: VOTE-YES B → coord -->
+    <text x="60" y="244" class="ts">t=22</text>
+    <line class="msg" x1="660" y1="240" x2="160" y2="240" marker-end="url(#arr-seq)"/>
+    <text x="410" y="235" text-anchor="middle" class="msg-lbl" fill="#10b981">VOTE-YES</text>
+
+    <!-- =================== PHASE 2: COMMIT =================== -->
+    <text x="730" y="265" class="phase-lbl">Phase 2: COMMIT</text>
+
+    <!-- t=25: COMMIT to A -->
+    <text x="60" y="284" class="ts">t=25</text>
+    <line class="msg" x1="160" y1="280" x2="410" y2="280" marker-end="url(#arr-seq)"/>
+    <text x="285" y="275" text-anchor="middle" class="msg-lbl" fill="#10b981">COMMIT</text>
+
+    <rect class="activation" x="406" y="280" width="8" height="40"/>
+
+    <!-- t=30: ACK from A -->
+    <text x="60" y="324" class="ts">t=30</text>
+    <line class="msg msg-async" x1="410" y1="320" x2="160" y2="320" marker-end="url(#arr-seq)"/>
+    <text x="285" y="315" text-anchor="middle" class="msg-lbl muted">ACK</text>
+
+    <!-- t=35: COMMIT to B -->
+    <text x="60" y="344" class="ts">t=35</text>
+    <line class="msg" x1="160" y1="340" x2="660" y2="340" marker-end="url(#arr-seq)"/>
+    <text x="410" y="335" text-anchor="middle" class="msg-lbl" fill="#10b981">COMMIT</text>
+
+    <rect class="activation" x="656" y="340" width="8" height="30"/>
+
+    <!-- t=42: ACK from B -->
+    <text x="60" y="374" class="ts">t=42</text>
+    <line class="msg msg-async" x1="660" y1="370" x2="160" y2="370" marker-end="url(#arr-seq)"/>
+    <text x="410" y="365" text-anchor="middle" class="msg-lbl muted">ACK</text>
+
+    <!-- Failure annotation -->
+    <text x="730" y="190" class="muted" font-size="10" font-style="italic">⚠ if B crashes</text>
+    <text x="730" y="204" class="muted" font-size="10" font-style="italic">here, coord</text>
+    <text x="730" y="218" class="muted" font-size="10" font-style="italic">waits + retries</text>
+
+  </g>
+</svg>
+
+<figcaption id="fig-seq-cap">
+  <strong>Figure N.</strong> 2PC protocol message sequence. Time flows top-to-bottom. Phase 1
+  collects votes; Phase 2 finalizes. Total wall-clock ≈ 42 time units in the happy path. The dashed
+  ACK arrows are asynchronous (coordinator continues without waiting). The failure annotation on
+  the right shows what happens if Participant B crashes mid-protocol — coordinator retries with
+  exponential backoff.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The sequence diagram pattern in 7 rules:
+
+     1. ACTORS AT TOP, LIFELINES DASHED DOWNWARD.
+        Vertical lines connect actor boxes to a time axis. Dashed signals "this
+        is conceptual time, not a real entity."
+
+     2. TIME FLOWS TOP-TO-BOTTOM. The reader's eye follows the arrows in order.
+
+     3. SOLID ARROWS = synchronous; DASHED = asynchronous (ack).
+        A sync call blocks the sender; async lets sender continue.
+
+     4. ACTIVATION BARS (semi-transparent rectangles on the lifeline) show
+        when an actor is "doing work" / "holding a lock". Don't omit them —
+        they reveal the cost.
+
+     5. TIMESTAMP THE EVENTS on the left margin if timing matters.
+        Without timestamps, the reader can't reason about latency or ordering bugs.
+
+     6. PHASE LABELS on the right margin.
+        Group messages by protocol phase ("Phase 1: PREPARE") so the structure
+        is readable at a glance.
+
+     7. FAILURE ANNOTATIONS in red, as side notes.
+        Sequence diagrams are about happy-path semantics. Annotate where things
+        can break — don't draw a parallel failure flow (it muddles the diagram).
+
+     Common patterns to reuse:
+       - Authentication handshake (OAuth, TLS, SAML)
+       - Distributed transactions (2PC, 3PC, Saga)
+       - RPC + retry logic
+       - Pub-sub with delivery semantics
+       - Multi-actor protocols (Paxos, Raft)
+     ============================================================================ -->

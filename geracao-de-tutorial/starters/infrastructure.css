@@ -1,0 +1,734 @@
+/* ============================================================================
+   geracao-de-tutorial — infrastructure.css
+   ============================================================================
+   Complete CSS infrastructure for a Distill-class technical tutorial.
+
+   Sections:
+     1. CSS variables (dark mode default + light mode overrides + reduced motion + print)
+     2. Reset / typography baseline
+     3. Layout: header, main, toc, footer
+     4. Accessibility utilities (skip link, focus-visible, screen-reader-only)
+     5. Equation term color classes (.term-*) with hover tooltips
+     6. Callout boxes (default, deep, warning, worked-example)
+     7. Pipeline-mini indicators
+     8. KPI hero cards
+     9. Sparkline bars
+    10. Tables (WCAG 1.3.1 compliant)
+    11. Code blocks + code header banners
+    12. Cheatsheet (notation <dl>)
+    13. Glossary
+    14. TOC sidebar + scroll-spy
+    15. Theme toggle, reading progress, back-to-top
+    16. Responsive overrides (mobile clamping)
+   ============================================================================ */
+
+
+/* ============================================================================
+   1. CSS variables
+   ============================================================================ */
+
+:root {
+  /* Surfaces (dark mode default) */
+  --bg:       #0f1117;
+  --panel:    #161922;
+  --panel-2:  #1c2030;
+  --text:     #e6e8ee;
+  --muted:    #8d94a8;
+  --line:     #2a2f42;
+  --code:     #1c2030;
+
+  /* Semantic colors (dark mode tuned) */
+  --accent:   #7aa2f7;  /* primary blue */
+  --s1:       #3b82f6;  /* deeper blue */
+  --s2:       #ef4444;  /* red */
+  --s3:       #10b981;  /* green */
+  --s4:       #8b5cf6;  /* violet */
+  --warn:     #fbbf24;  /* yellow */
+  --ok:       #10b981;  /* alias for green */
+  --bad:      #ef4444;  /* alias for red */
+
+  /* Equation term colors (used in .term-* classes; see section 5) */
+  --term-blue:    #7aa2f7;
+  --term-green: #10b981;
+  --term-yellow:    #fbbf24;
+  --term-orange:      #fb923c;
+  --term-violet:        #8b5cf6;
+  --term-red:  #ef4444;
+  --term-cyan:   #06b6d4;
+  --term-magenta:      #ec4899;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* Light mode auto-switch — when system says light AND user hasn't explicitly chosen dark */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:       #ffffff;
+    --panel:    #f8fafc;
+    --panel-2:  #f1f5f9;
+    --text:     #0f172a;
+    --muted:    #64748b;
+    --line:     #e2e8f0;
+    --code:     #f1f5f9;
+
+    /* Light-mode darker shades for term-* colors (dark-mode hues fail WCAG on white) */
+    --term-blue:    #2057d8;
+    --term-green: #047857;
+    --term-yellow:    #a16207;
+    --term-orange:      #c2410c;
+    --term-violet:        #6d28d9;
+    --term-red:  #b91c1c;
+    --term-cyan:   #0e7490;
+    --term-magenta:      #be185d;
+  }
+}
+
+/* Explicit light theme via data-theme attribute */
+:root[data-theme="light"] {
+  --bg:       #ffffff;
+  --panel:    #f8fafc;
+  --panel-2:  #f1f5f9;
+  --text:     #0f172a;
+  --muted:    #64748b;
+  --line:     #e2e8f0;
+  --code:     #f1f5f9;
+  --term-blue:    #2057d8;
+  --term-green: #047857;
+  --term-yellow:    #a16207;
+  --term-orange:      #c2410c;
+  --term-violet:        #6d28d9;
+  --term-red:  #b91c1c;
+  --term-cyan:   #0e7490;
+  --term-magenta:      #be185d;
+}
+
+/* Reduced motion — disable both CSS animations and CSS transitions */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print mode — hide chrome, force black on white */
+@media print {
+  .skip-link, .control-btn, .reading-progress, .toc {
+    display: none !important;
+  }
+  body { background: white; color: black; max-width: 100%; padding: 0; }
+  .section { break-inside: avoid; }
+  figure, .callout { break-inside: avoid; }
+  a { color: black; text-decoration: underline; }
+  pre { white-space: pre-wrap; word-wrap: break-word; }
+}
+
+
+/* ============================================================================
+   2. Reset / typography baseline
+   ============================================================================ */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 920px;
+  padding: 24px 32px 64px;
+  margin-left: auto;
+  margin-right: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 { line-height: 1.25; margin: 1.4em 0 0.5em; }
+h1 { font-size: 36px; font-weight: 700; }
+h2 { font-size: 26px; font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+h3 { font-size: 20px; font-weight: 600; }
+h4 { font-size: 17px; font-weight: 600; color: var(--muted); }
+
+p { margin: 0.8em 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+ul, ol { padding-left: 1.5em; }
+li { margin: 4px 0; }
+
+em { color: var(--muted); }
+strong { color: var(--text); font-weight: 600; }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--code);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--code);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Highlight: make MathJax inherit body colors instead of black */
+mjx-container { color: inherit !important; }
+
+
+/* ============================================================================
+   3. Layout: header, main, toc, footer
+   ============================================================================ */
+
+.hero {
+  margin: 24px 0 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-subtitle {
+  font-size: 18px;
+  color: var(--muted);
+  margin: 8px 0 24px;
+  max-width: 740px;
+}
+
+.section {
+  margin: 48px 0;
+}
+
+footer {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+
+/* ============================================================================
+   4. Accessibility utilities
+   ============================================================================ */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 16px;
+  border: 2px solid var(--accent);
+  border-radius: 0 0 6px 0;
+  font-weight: 600;
+}
+.skip-link:focus { left: 0; }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ============================================================================
+   5. Equation term color classes (Distill-style)
+   ============================================================================ */
+
+.term-blue    { color: var(--term-blue);    font-weight: 600; }
+.term-green   { color: var(--term-green);   font-weight: 600; }
+.term-yellow  { color: var(--term-yellow);  font-weight: 600; }
+.term-orange  { color: var(--term-orange);  font-weight: 600; }
+.term-violet  { color: var(--term-violet);  font-weight: 600; }
+.term-red     { color: var(--term-red);     font-weight: 600; }
+.term-cyan    { color: var(--term-cyan);    font-weight: 600; }
+.term-magenta { color: var(--term-magenta); font-weight: 600; }
+
+/* A term span is colored (above). Adding data-tip="..." makes it hover-explainable:
+   only then does it get the help cursor, dotted underline, and tooltip. */
+[class^="term-"][data-tip], [class*=" term-"][data-tip] {
+  cursor: help;
+  border-bottom: 1px dotted currentColor;
+  position: relative;
+  text-decoration: none;
+}
+
+/* Hover tooltip — opt-in: add data-tip="your definition" to any term-* span.
+   The text comes from the attribute, so nothing domain-specific is baked in. */
+[class^="term-"][data-tip]:hover::after,
+[class*=" term-"][data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid currentColor;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  max-width: min(320px, calc(100vw - 32px));
+  width: max-content;
+  text-align: center;
+  white-space: normal;
+  z-index: 200;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  line-height: 1.4;
+}
+
+
+/* MathJax symbol cursor (set by JS post-processor adding title attribute) */
+mjx-mi[title], mjx-mn[title], mjx-mo[title], mjx-mtext[title] {
+  cursor: help;
+}
+
+
+/* ============================================================================
+   6. Callout boxes
+   ============================================================================ */
+
+.callout {
+  background: var(--panel);
+  border-left: 4px solid var(--accent);
+  padding: 16px 20px;
+  border-radius: 0 8px 8px 0;
+  margin: 24px 0;
+}
+
+.callout-title {
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text);
+}
+
+.callout p:first-child { margin-top: 0; }
+.callout p:last-child  { margin-bottom: 0; }
+
+.callout.deep         { border-left-color: var(--s4); }
+.callout.warning      { border-left-color: var(--warn); }
+
+.callout.worked-example {
+  border-left-color: var(--s3);
+  background: linear-gradient(to right, rgba(16,185,129,0.06), transparent 240px), var(--panel);
+}
+
+.callout.worked-example .callout-title { color: var(--s3); }
+
+
+/* ============================================================================
+   7. Pipeline-mini indicators
+   ============================================================================ */
+
+.pipeline-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 20px 0;
+  background: var(--panel);
+}
+
+.pipeline-mini::before {
+  content: "📍";
+  margin-right: 6px;
+  filter: grayscale(0.4);
+}
+
+.pipeline-mini .step {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.pipeline-mini .step.active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
+.pipeline-mini .step.done {
+  background: var(--s3);
+  color: var(--bg);
+  border-color: var(--s3);
+}
+
+.pipeline-mini .step.skipped {
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  text-decoration: line-through;
+  text-decoration-style: dotted;
+}
+
+.pipeline-mini .step + .step::before {
+  content: "→";
+  display: inline-block;
+  margin-right: 8px;
+  margin-left: -2px;
+  color: var(--muted);
+}
+
+
+/* ============================================================================
+   8. KPI hero cards
+   ============================================================================ */
+
+.hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--accent);
+}
+
+.kpi-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 32px; font-weight: 700; margin: 6px 0; }
+.kpi-note  { font-size: 12px; color: var(--muted); }
+
+.kpi-ok  { border-left-color: var(--s3); }
+.kpi-ok  .kpi-value { color: var(--s3); }
+.kpi-mid { border-left-color: var(--warn); }
+.kpi-mid .kpi-value { color: var(--warn); }
+.kpi-bad { border-left-color: var(--s2); }
+.kpi-bad .kpi-value { color: var(--s2); }
+
+
+/* ============================================================================
+   9. Sparkline bars (CSS custom properties — set --val: NNN)
+   ============================================================================ */
+
+.bar {
+  display: inline-block;
+  height: 14px;
+  vertical-align: middle;
+  min-width: 4px;
+  border-radius: 2px;
+  width: calc(var(--val, 0) * 1%);
+  position: relative;
+}
+
+.bar-ok  { background: var(--s3); }
+.bar-mid { background: var(--warn); }
+.bar-bad { background: var(--s2); }
+.bar-accent { background: var(--accent); }
+
+/* Optional: show value inside the bar */
+.bar strong {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--bg);
+  font-family: var(--font-mono);
+}
+
+
+/* ============================================================================
+   10. Tables (WCAG 1.3.1)
+   ============================================================================ */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  padding: 8px 0;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+th {
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--line);
+}
+
+td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+
+tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+:root[data-theme="light"] tbody tr:nth-child(even) td,
+:root:not([data-theme="dark"]) tbody tr:nth-child(even) td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+
+/* ============================================================================
+   11. Code blocks + code header banners
+   ============================================================================ */
+
+.code-block {
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.code-header .file-path { color: var(--muted); }
+.code-header .lang-tag  { color: var(--accent); font-weight: 600; }
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.copy-btn:hover { color: var(--text); border-color: var(--accent); }
+.copy-btn.copied { color: var(--s3); border-color: var(--s3); }
+
+.code-block pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+
+/* ============================================================================
+   12. Cheatsheet (notation <dl>)
+   ============================================================================ */
+
+dl.cheatsheet {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 18px;
+  padding: 14px 18px;
+  background: var(--panel);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+}
+
+dl.cheatsheet dt {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+dl.cheatsheet dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+
+/* ============================================================================
+   13. Glossary
+   ============================================================================ */
+
+a.gloss {
+  color: inherit;
+  border-bottom: 1px dotted var(--accent);
+  cursor: help;
+}
+a.gloss:hover { color: var(--accent); text-decoration: none; }
+
+dl.glossary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 12px 24px;
+  margin: 24px 0;
+}
+
+dl.glossary dt {
+  font-weight: 600;
+  color: var(--text);
+  padding-top: 4px;
+}
+
+dl.glossary dd {
+  margin: 0;
+  color: var(--muted);
+  padding-top: 4px;
+}
+
+
+/* ============================================================================
+   14. TOC sidebar + scroll-spy
+   ============================================================================ */
+
+.toc {
+  position: fixed;
+  right: max(24px, calc((100vw - 920px) / 2 - 220px));
+  top: 96px;
+  width: 200px;
+  max-height: calc(100vh - 128px);
+  overflow-y: auto;
+  padding: 0;
+  font-size: 13px;
+  display: none;  /* Hidden by default; enabled at viewport ≥ 1200px below */
+}
+
+.toc-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  margin: 0 0 8px;
+}
+
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 4px 0; }
+
+.toc a {
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+  display: block;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.toc a:hover { color: var(--text); text-decoration: none; }
+.toc a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+@media (min-width: 1200px) {
+  .toc { display: block; }
+}
+
+
+/* ============================================================================
+   15. Theme toggle, reading progress, back-to-top
+   ============================================================================ */
+
+.reading-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  width: 0;
+  z-index: 1000;
+  transition: width 0.05s linear;
+}
+
+.control-btn {
+  position: fixed;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 999;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.control-btn:hover { background: var(--panel-2); }
+
+.theme-btn { top: 20px; right: 20px; }
+
+.back-top-btn {
+  bottom: 20px; right: 20px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.back-top-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+/* ============================================================================
+   16. Responsive overrides
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  body { padding: 16px 16px 48px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  .hero-kpis { grid-template-columns: 1fr 1fr; }
+  .control-btn { font-size: 16px; padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+  body { padding: 12px 12px 40px; }
+  .hero-kpis { grid-template-columns: 1fr; }
+  .pipeline-mini { font-size: 11px; }
+  /* On narrow screens, anchor tooltips to term container rather than viewport-center */
+  [class^="term-"][data-tip]:hover::after,
+  [class*=" term-"][data-tip]:hover::after {
+    left: 0;
+    transform: none;
+    max-width: calc(100vw - 32px);
+  }
+}

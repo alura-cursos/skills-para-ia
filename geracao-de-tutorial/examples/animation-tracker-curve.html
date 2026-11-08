@@ -1,0 +1,229 @@
+<!--
+  EXAMPLE: Tracker following a curve
+  ===================================
+  A point moves along a PRE-DRAWN curve (path, not axis). Synced readouts
+  show the current position's coordinates. Use <animateMotion> + <mpath>
+  for the SMIL approach, or CSS transform for the CSS approach.
+
+  Concrete example: a daily temperature curve (temperature vs hour of day). A
+  tracker dot follows the temperature curve from left to right, while a readout
+  panel shows the current hour and current temperature, updated reactively.
+
+  Contrast with:
+    - Sweeper (tracker on STRAIGHT AXIS — values projected from axis)
+    - Sequential reveal (elements appear, tracker doesn't move)
+
+  Use when:
+    - The relationship being taught is "input value → output curve point"
+    - The curve is the actual focus (e.g., the temperature profile)
+    - The reader's eye should follow the curve, not project from an axis
+
+  This example uses SMIL <animateMotion> for the tracker — the cleanest way
+  to make a dot follow a Bezier path exactly.
+-->
+
+<figure role="figure" aria-labelledby="anim-tracker-cap">
+<svg role="img"
+     aria-labelledby="anim-tracker-title anim-tracker-desc"
+     viewBox="0 0 820 300"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="anim-tracker-title">Temperature curve traced: temperature over 24 hours</title>
+  <desc id="anim-tracker-desc">An animation showing a daily temperature curve being traced left-to-right
+    by a moving tracker dot. The curve starts at (hour 0, 14°C), dips to a pre-dawn low near (hour 6, 11°C),
+    rises to an afternoon peak at (hour 15, 24°C), then falls back toward (hour 24, 14°C). The tracker dot
+    follows the curve over a 7-second loop. A readout panel on the right shows the current hour and current
+    temperature as the dot moves, updated via stacked text elements with CSS keyframes timed to the dot's position.</desc>
+
+  <style>
+    #anim-tracker-fig {
+      --bg: #0f1117;       --panel-2: #1c2030;    --text: #e6e8ee;
+      --muted: #8d94a8;    --line: #2a2f42;       --accent: #7aa2f7;
+      --temp: #ec4899;     --good: #10b981;
+    }
+    #anim-tracker-fig .prose { font-family: system-ui, sans-serif; fill: var(--text); }
+    #anim-tracker-fig .muted { font-family: system-ui, sans-serif; fill: var(--muted); }
+    #anim-tracker-fig .mono  { font-family: ui-monospace, monospace; fill: var(--text); }
+    #anim-tracker-fig .title { font-family: system-ui, sans-serif; fill: var(--text); font-weight: 600; }
+
+    /* Readout text: 5 stacked values, each visible during one phase of the tracker's journey.
+       The tracker uses SMIL <animateMotion> which takes 7s. The readouts use CSS fade-in/out at:
+         phase A: 0-15%   (hour ~3, temp ~12°C)
+         phase B: 18-37%  (hour ~8, temp ~13°C)
+         phase C: 40-58%  (hour ~12, temp ~19°C)
+         phase D: 61-78%  (hour ~16, temp ~23°C)
+         phase E: 81-95%  (hour ~21, temp ~17°C)
+       100% reset. */
+    @keyframes show-A { 0%,15% { opacity: 1; } 18%,100% { opacity: 0; } }
+    @keyframes show-B { 0%,18% { opacity: 0; } 22%,37% { opacity: 1; } 40%,100% { opacity: 0; } }
+    @keyframes show-C { 0%,40% { opacity: 0; } 44%,58% { opacity: 1; } 61%,100% { opacity: 0; } }
+    @keyframes show-D { 0%,61% { opacity: 0; } 65%,78% { opacity: 1; } 81%,100% { opacity: 0; } }
+    @keyframes show-E { 0%,81% { opacity: 0; } 85%,95% { opacity: 1; } 100% { opacity: 0; } }
+
+    #anim-tracker-fig .ph-A { animation: show-A 7s ease-in-out infinite; }
+    #anim-tracker-fig .ph-B { animation: show-B 7s ease-in-out infinite; opacity: 0; }
+    #anim-tracker-fig .ph-C { animation: show-C 7s ease-in-out infinite; opacity: 0; }
+    #anim-tracker-fig .ph-D { animation: show-D 7s ease-in-out infinite; opacity: 0; }
+    #anim-tracker-fig .ph-E { animation: show-E 7s ease-in-out infinite; opacity: 0; }
+
+    /* Trail line that gets longer as the tracker moves */
+    @keyframes trail-grow {
+      0%   { stroke-dashoffset: 1200; }
+      100% { stroke-dashoffset: 0; }
+    }
+    #anim-tracker-fig .trail {
+      stroke-dasharray: 1200;
+      stroke-dashoffset: 1200;
+      animation: trail-grow 7s linear infinite;
+    }
+  </style>
+
+  <g id="anim-tracker-fig">
+
+    <text x="20" y="28" class="title" font-size="13">Temperature curve — temperature over 24 hours</text>
+
+    <!-- PLOT AREA -->
+    <!-- x-axis from x=80 (hour 0) to x=620 (hour 24); 540 px wide
+         y-axis from y=240 (0°C) to y=60 (30°C); 180 px tall
+         Scale: x = 80 + (hour/24)*540;  y = 240 - (temp/30)*180 -->
+
+    <rect x="60" y="50" width="580" height="220" rx="6" fill="var(--panel-2)"/>
+
+    <!-- y-axis -->
+    <line x1="80" y1="60" x2="80" y2="240" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="74" y="64" text-anchor="end" class="muted">30</text>
+    <line x1="78" y1="120" x2="82" y2="120" stroke="var(--line)"/>
+    <text x="74" y="124" text-anchor="end" class="muted">20</text>
+    <line x1="78" y1="180" x2="82" y2="180" stroke="var(--line)"/>
+    <text x="74" y="184" text-anchor="end" class="muted">10</text>
+    <text x="74" y="244" text-anchor="end" class="muted">0</text>
+    <text x="42" y="150" text-anchor="middle" class="muted" transform="rotate(-90, 42, 150)">°C</text>
+
+    <!-- x-axis -->
+    <line x1="80" y1="240" x2="620" y2="240" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="80" y="258" text-anchor="middle" class="muted">0</text>
+    <line x1="170" y1="238" x2="170" y2="242" stroke="var(--line)"/>
+    <text x="170" y="258" text-anchor="middle" class="muted">4</text>
+    <line x1="260" y1="238" x2="260" y2="242" stroke="var(--line)"/>
+    <text x="260" y="258" text-anchor="middle" class="muted">8</text>
+    <line x1="350" y1="238" x2="350" y2="242" stroke="var(--line)"/>
+    <text x="350" y="258" text-anchor="middle" class="muted">12</text>
+    <line x1="440" y1="238" x2="440" y2="242" stroke="var(--line)"/>
+    <text x="440" y="258" text-anchor="middle" class="muted">16</text>
+    <line x1="530" y1="238" x2="530" y2="242" stroke="var(--line)"/>
+    <text x="530" y="258" text-anchor="middle" class="muted">20</text>
+    <line x1="620" y1="238" x2="620" y2="242" stroke="var(--line)"/>
+    <text x="620" y="258" text-anchor="middle" class="muted">24</text>
+    <text x="350" y="278" text-anchor="middle" class="muted">hour</text>
+
+    <!-- THE TEMPERATURE CURVE PATH (also reused as motion path for tracker) -->
+    <!-- Temperature values at sample hours:
+         hour=0  → 14°C → (80, 240 - 14/30*180) = (80, 156)
+         hour=6  → 11°C → (215, 174)   (pre-dawn low)
+         hour=12 → 19°C → (350, 126)
+         hour=15 → 24°C → (418, 96)    (afternoon peak)
+         hour=21 → 17°C → (553, 138)
+         hour=24 → 14°C → (620, 156)
+    -->
+    <path id="temp-curve"
+          d="M 80,156 Q 160,176 215,174 Q 290,158 350,126 Q 388,98 418,96 Q 500,104 553,138 Q 595,150 620,156"
+          stroke="var(--temp)" stroke-width="2.5" fill="none" opacity="0.4"/>
+
+    <!-- Trail: same path, drawn underneath the tracker, growing with stroke-dashoffset -->
+    <path class="trail"
+          d="M 80,156 Q 160,176 215,174 Q 290,158 350,126 Q 388,98 418,96 Q 500,104 553,138 Q 595,150 620,156"
+          stroke="var(--temp)" stroke-width="3" fill="none"/>
+
+    <!-- THE TRACKER (uses SMIL animateMotion + mpath) -->
+    <circle r="6" fill="var(--temp)" stroke="var(--bg)" stroke-width="2">
+      <animateMotion dur="7s" repeatCount="indefinite">
+        <mpath xlink:href="#temp-curve"/>
+      </animateMotion>
+    </circle>
+
+    <!-- READOUT PANEL on right -->
+    <g transform="translate(660, 70)">
+      <rect x="0" y="0" width="145" height="135" rx="6" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="12" y="22" class="muted" font-size="11">tracker readout</text>
+
+      <text x="12" y="50" class="mono" font-size="12">hour =</text>
+      <g>
+        <text x="62" y="50" class="mono ph-A" font-size="12" fill="var(--accent)">03</text>
+        <text x="62" y="50" class="mono ph-B" font-size="12" fill="var(--accent)">08</text>
+        <text x="62" y="50" class="mono ph-C" font-size="12" fill="var(--accent)">12</text>
+        <text x="62" y="50" class="mono ph-D" font-size="12" fill="var(--accent)">16</text>
+        <text x="62" y="50" class="mono ph-E" font-size="12" fill="var(--accent)">21</text>
+      </g>
+
+      <text x="12" y="78" class="mono" font-size="12">temp =</text>
+      <g>
+        <text x="62" y="78" class="mono ph-A" font-size="12" fill="var(--temp)">12°C</text>
+        <text x="62" y="78" class="mono ph-B" font-size="12" fill="var(--temp)">13°C</text>
+        <text x="62" y="78" class="mono ph-C" font-size="12" fill="var(--temp)">19°C</text>
+        <text x="62" y="78" class="mono ph-D" font-size="12" fill="var(--temp)">23°C</text>
+        <text x="62" y="78" class="mono ph-E" font-size="12" fill="var(--good)">17°C</text>
+      </g>
+
+      <line x1="12" y1="92" x2="135" y2="92" stroke="var(--line)"/>
+
+      <text x="12" y="112" class="muted" font-size="11">phase:</text>
+      <g>
+        <text x="50" y="112" class="muted ph-A" font-size="11" font-style="italic">night</text>
+        <text x="50" y="112" class="muted ph-B" font-size="11" font-style="italic">morning</text>
+        <text x="50" y="112" class="muted ph-C" font-size="11" font-style="italic">midday</text>
+        <text x="50" y="112" class="muted ph-D" font-size="11" font-style="italic">afternoon</text>
+        <text x="50" y="112" class="muted ph-E" font-size="11" font-style="italic" fill="var(--good)">evening</text>
+      </g>
+
+      <text x="12" y="130" class="muted" font-size="10">7s loop</text>
+    </g>
+  </g>
+</svg>
+
+<figcaption id="anim-tracker-cap">
+  <strong>Animation:</strong> a tracker dot follows the actual temperature curve. The trail (bright pink)
+  grows behind it; the readout panel updates with hour and temperature as the dot moves. Different
+  from a sweeper because the path here IS the focus — the reader's eye follows the curve, not an axis.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The tracker-on-curve pattern in 5 rules:
+
+     1. SHARE ONE PATH BETWEEN VISUAL AND MOTION.
+        Define <path id="..." d="..."/> once and reuse it as the motion path
+        via <animateMotion><mpath xlink:href="#..."/></animateMotion>.
+        Guarantees the tracker EXACTLY follows the drawn curve. (No coordinate drift.)
+
+     2. ADD A TRAIL (stroke-dashoffset trick).
+        Set stroke-dasharray to a length ≥ the path's actual length, animate
+        stroke-dashoffset from full down to 0. The "ink" grows behind the tracker.
+
+     3. STACK READOUT VALUES, FADE BETWEEN THEM.
+        SMIL can't animate textContent (bear trap B.2). Use CSS @keyframes opacity
+        on multiple <text> elements, timed to match the tracker's progress.
+
+     4. KEEP THE CURVE'S BACKGROUND VERSION VISIBLE (low opacity).
+        The reader needs to see WHERE the tracker is going as well as where it's been.
+        Draw the full path at opacity 0.3-0.4 underneath the growing trail.
+
+     5. PHASE-COLOR THE FINAL READOUT.
+        When the tracker reaches the end state you want to emphasize, switch readout
+        color to green. Reinforces the "we got there" feeling.
+
+     SMIL <animateMotion> + <mpath> CAVEATS:
+       - Falls back gracefully in older browsers (curve still drawn).
+       - Doesn't respect CSS prefers-reduced-motion media query (use JS pauseAnimations).
+       - dur is the only timing control; you can't ease-in-out cleanly without dividing
+         into multiple animateMotion segments (rarely needed).
+
+     Use case checklist:
+       ✓ Teaching how X changes as Y progresses (temperature vs hour, price vs day)
+       ✓ Following a parametric curve (planetary orbit, trajectory)
+       ✓ Showing a rise-and-fall, peak, or trough over an interval
+       ✗ NOT for parameter sweeps over an axis (use sweeper pattern)
+       ✗ NOT for "appears all at once" content (use sequential reveal)
+     ============================================================================ -->

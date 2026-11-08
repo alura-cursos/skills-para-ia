@@ -1,0 +1,218 @@
+<!--
+  EXAMPLE: Network diagram (nodes + edges, undirected)
+  =====================================================
+  Static figure showing entities and their relationships. Distinct from the
+  tiered "architecture" pattern (which has directional data flow) and the
+  tree-shaped "lineage" pattern (which is hierarchical).
+
+  Concrete example: a supply-chain / trade network. Nodes are actors
+  (suppliers, factories, ports, retailers), edges are "X ships to / trades
+  with Y" with no directionality. Used for knowledge graphs, dependency
+  graphs, related-work figures, social networks, sparse matrix sparsity patterns.
+
+  Use when:
+    - Relationships are bidirectional or undirected
+    - Layout is not hierarchical (no clear "above" / "below")
+    - The story is "X is connected to Y, Y to Z, ..."
+-->
+
+<figure role="figure" aria-labelledby="fig-net-cap" aria-describedby="fig-net-desc">
+<svg role="img"
+     aria-labelledby="fig-net-title fig-net-desc"
+     viewBox="0 0 820 360"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-net-title">Trade network: 9 supply-chain actors and their shipping links</title>
+  <desc id="fig-net-desc">An undirected graph with 9 supply-chain actor nodes arranged in a roughly circular layout.
+    The central node "Hub" (a distribution center) connects to 5 others (Metals, Cotton, Retail, Depot, Dist).
+    The two raw-material suppliers Metals and Cotton are linked to each other (they co-ship freight). Cotton and
+    the Factory are linked (raw material feeds assembly). The Depot and Port connect most nearby actors. Edge
+    thickness encodes shipping volume: thick = major trade route, medium = regional link, thin = occasional shipment.</desc>
+
+  <style>
+    #fig-net-svg .node      { stroke-width: 2; }
+    #fig-net-svg .node-core { fill: #1c2030; stroke: #fbbf24; stroke-width: 3; }
+    #fig-net-svg .node-blue { fill: #1c2030; stroke: #7aa2f7; }
+    #fig-net-svg .node-green { fill: #1c2030; stroke: #10b981; }
+    #fig-net-svg .node-aux  { fill: #1c2030; stroke: #8d94a8; }
+
+    #fig-net-svg .edge-strong { stroke: #e6e8ee; stroke-width: 2.5; opacity: 0.7; }
+    #fig-net-svg .edge-med    { stroke: #8d94a8; stroke-width: 1.5; opacity: 0.55; }
+    #fig-net-svg .edge-weak   { stroke: #8d94a8; stroke-width: 1; opacity: 0.35; stroke-dasharray: 3 3; }
+
+    #fig-net-svg .lbl   { font-family: system-ui, sans-serif; font-size: 13px; fill: #e6e8ee; font-weight: 600; }
+    #fig-net-svg .sub   { font-family: ui-monospace, monospace; font-size: 10px; fill: #8d94a8; }
+    #fig-net-svg .muted { font-family: system-ui, sans-serif; font-size: 11px; fill: #8d94a8; }
+    #fig-net-svg .title { font-family: system-ui, sans-serif; font-size: 13px; fill: #e6e8ee; font-weight: 600; }
+  </style>
+
+  <g id="fig-net-svg">
+
+    <text x="20" y="28" class="title">Trade network — supply-chain actors and links</text>
+
+    <!-- ===================== NODES (9 total) =====================
+         Layout: Hub in center (410, 200), others arranged in circle r=120 around it.
+         Angles (degrees): 0, 45, 90, 135, 180, 225, 270, 315 — 8 cardinal directions. -->
+
+    <!-- Center: Hub -->
+    <!-- (410, 200) -->
+
+    <!-- Metals: top-right (45°) — (410 + 120*cos(-45), 200 + 120*sin(-45)) = (495, 115) -->
+    <!-- Cotton: top (90°) — (410, 80) -->
+    <!-- Retail: top-left (135°) — (325, 115) -->
+    <!-- Depot: left (180°) — (290, 200) -->
+    <!-- Dist: bottom-left (225°) — (325, 285) -->
+    <!-- Freight: bottom (270°) — (410, 320) -->
+    <!-- Factory: bottom-right (315°) — (495, 285) -->
+    <!-- Port: right (0°) — (530, 200) -->
+
+    <!-- ===================== EDGES (drawn first so nodes overlay them) ===================== -->
+
+    <!-- Major trade routes from Hub (the central distribution point) to directly-served actors -->
+    <line class="edge-strong" x1="410" y1="200" x2="495" y2="115"/>  <!-- Hub—Metals -->
+    <line class="edge-strong" x1="410" y1="200" x2="410" y2="80"/>   <!-- Hub—Cotton -->
+    <line class="edge-strong" x1="410" y1="200" x2="325" y2="115"/>  <!-- Hub—Retail -->
+    <line class="edge-strong" x1="410" y1="200" x2="290" y2="200"/>  <!-- Hub—Depot -->
+    <line class="edge-strong" x1="410" y1="200" x2="325" y2="285"/>  <!-- Hub—Dist -->
+
+    <!-- Regional links among the upstream suppliers and to retail -->
+    <line class="edge-med" x1="495" y1="115" x2="410" y2="80"/>      <!-- Metals—Cotton -->
+    <line class="edge-med" x1="410" y1="80"  x2="325" y2="115"/>     <!-- Cotton—Retail (direct-to-store shipment) -->
+
+    <!-- Regional links to Freight, Factory, Port (logistics intermediaries) -->
+    <line class="edge-med" x1="495" y1="115" x2="410" y2="320"/>     <!-- Metals—Freight -->
+    <line class="edge-med" x1="410" y1="80"  x2="410" y2="320"/>     <!-- Cotton—Freight -->
+    <line class="edge-med" x1="325" y1="115" x2="410" y2="320"/>     <!-- Retail—Freight -->
+    <line class="edge-med" x1="410" y1="80"  x2="495" y2="285"/>     <!-- Cotton—Factory -->
+    <line class="edge-med" x1="290" y1="200" x2="530" y2="200"/>     <!-- Depot—Port -->
+
+    <!-- Occasional shipments (dashed) for low-volume links -->
+    <line class="edge-weak" x1="290" y1="200" x2="325" y2="285"/>    <!-- Depot—Dist -->
+    <line class="edge-weak" x1="290" y1="200" x2="325" y2="115"/>    <!-- Depot—Retail -->
+    <line class="edge-weak" x1="495" y1="285" x2="530" y2="200"/>    <!-- Factory—Port -->
+
+    <!-- ===================== NODES (drawn over edges) ===================== -->
+
+    <!-- Center: Hub (core actor, thicker yellow border) -->
+    <circle class="node node-core" cx="410" cy="200" r="34"/>
+    <text x="410" y="198" text-anchor="middle" class="lbl">Hub</text>
+    <text x="410" y="212" text-anchor="middle" class="sub">central DC</text>
+
+    <!-- Metals -->
+    <circle class="node node-blue" cx="495" cy="115" r="28"/>
+    <text x="495" y="113" text-anchor="middle" class="lbl">Metals</text>
+    <text x="495" y="125" text-anchor="middle" class="sub">ore mine</text>
+
+    <!-- Cotton -->
+    <circle class="node node-blue" cx="410" cy="80" r="28"/>
+    <text x="410" y="78" text-anchor="middle" class="lbl">Cotton</text>
+    <text x="410" y="90" text-anchor="middle" class="sub">crop farm</text>
+
+    <!-- Retail -->
+    <circle class="node node-green" cx="325" cy="115" r="28"/>
+    <text x="325" y="113" text-anchor="middle" class="lbl">Retail</text>
+    <text x="325" y="125" text-anchor="middle" class="sub">big-box</text>
+
+    <!-- Depot -->
+    <circle class="node node-aux" cx="290" cy="200" r="26"/>
+    <text x="290" y="198" text-anchor="middle" class="lbl">Depot</text>
+    <text x="290" y="210" text-anchor="middle" class="sub">warehouse</text>
+
+    <!-- Dist -->
+    <circle class="node node-aux" cx="325" cy="285" r="26"/>
+    <text x="325" y="283" text-anchor="middle" class="lbl">Dist</text>
+    <text x="325" y="295" text-anchor="middle" class="sub">distributor</text>
+
+    <!-- Freight -->
+    <circle class="node node-aux" cx="410" cy="320" r="26"/>
+    <text x="410" y="318" text-anchor="middle" class="lbl">Freight</text>
+    <text x="410" y="330" text-anchor="middle" class="sub">carrier</text>
+
+    <!-- Factory -->
+    <circle class="node node-aux" cx="495" cy="285" r="26"/>
+    <text x="495" y="283" text-anchor="middle" class="lbl">Factory</text>
+    <text x="495" y="295" text-anchor="middle" class="sub">assembly</text>
+
+    <!-- Port -->
+    <circle class="node node-aux" cx="530" cy="200" r="26"/>
+    <text x="530" y="198" text-anchor="middle" class="lbl">Port</text>
+    <text x="530" y="210" text-anchor="middle" class="sub">seaport</text>
+
+    <!-- ===================== LEGEND ===================== -->
+    <g transform="translate(20, 280)">
+      <rect x="0" y="0" width="200" height="70" rx="6" fill="#1c2030" stroke="#2a2f42"/>
+      <text x="10" y="18" class="muted" font-weight="600">node color</text>
+
+      <circle cx="22" cy="34" r="6" fill="#1c2030" stroke="#fbbf24" stroke-width="2"/>
+      <text x="36" y="38" class="muted">central hub</text>
+
+      <circle cx="22" cy="52" r="6" fill="#1c2030" stroke="#7aa2f7" stroke-width="2"/>
+      <text x="36" y="56" class="muted">raw-material supplier</text>
+
+      <circle cx="110" cy="34" r="6" fill="#1c2030" stroke="#10b981" stroke-width="2"/>
+      <text x="124" y="38" class="muted">retail</text>
+
+      <circle cx="110" cy="52" r="6" fill="#1c2030" stroke="#8d94a8" stroke-width="2"/>
+      <text x="124" y="56" class="muted">logistics actor</text>
+    </g>
+
+    <g transform="translate(620, 280)">
+      <rect x="0" y="0" width="180" height="70" rx="6" fill="#1c2030" stroke="#2a2f42"/>
+      <text x="10" y="18" class="muted" font-weight="600">shipping volume</text>
+
+      <line x1="10" y1="34" x2="40" y2="34" stroke="#e6e8ee" stroke-width="2.5" opacity="0.7"/>
+      <text x="48" y="38" class="muted">major trade route</text>
+
+      <line x1="10" y1="50" x2="40" y2="50" stroke="#8d94a8" stroke-width="1.5" opacity="0.55"/>
+      <text x="48" y="54" class="muted">regional link</text>
+
+      <line x1="10" y1="64" x2="40" y2="64" stroke="#8d94a8" stroke-width="1" opacity="0.35" stroke-dasharray="3 3"/>
+      <text x="48" y="68" class="muted">occasional shipment</text>
+    </g>
+
+  </g>
+</svg>
+
+<figcaption id="fig-net-cap">
+  <strong>Figure N.</strong> Trade network for the supply chain covered in this tutorial. The Hub (center,
+  yellow) is the central distribution point; every actor connects to it via major trade routes (thick edges) or
+  occasional shipments (medium / dashed edges). The grouping by border color (blue raw-material suppliers,
+  green retail, gray logistics actors) shows the "actor roles" along the chain.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The network-diagram pattern in 5 rules:
+
+     1. LAYOUT BY MEANING, not by force-directed algorithm.
+        Manually place nodes so related concepts are visually close. Force-directed
+        layouts (Graphviz, D3) optimize for edge length but lose semantic structure.
+
+     2. NODE COLOR ENCODES CATEGORY.
+        Don't use color for raw "type" labels — encode the FAMILY each node belongs to.
+        Reader can mentally cluster by color before reading labels.
+
+     3. EDGE THICKNESS ENCODES STRENGTH OF RELATIONSHIP.
+        Thick = strong (direct derivation), medium = moderate, thin/dashed = weak/indirect.
+        Without this, all edges look equally important.
+
+     4. DRAW EDGES FIRST, NODES SECOND.
+        SVG draws in document order. Edges drawn after nodes will overlay them. The
+        canonical SVG idiom: <g class="edges">...</g> THEN <g class="nodes">...</g>.
+
+     5. LEGEND IS MANDATORY.
+        Without explaining color/thickness encoding, the reader sees a beautiful-but-uninterpretable
+        graph. Always include node-color and edge-thickness legends.
+
+     Use case checklist:
+       ✓ Knowledge graphs (related concepts, papers, ideas)
+       ✓ Dependency graphs (libraries, modules)
+       ✓ Related-work figures (papers citing each other)
+       ✓ Sparse matrix visualization (where the non-zero entries cluster)
+       ✗ NOT for hierarchies (use figure-lineage-tree.html)
+       ✗ NOT for sequences/flows (use figure-architecture.html)
+       ✗ NOT for time-series (use figure-trajectory.html)
+     ============================================================================ -->

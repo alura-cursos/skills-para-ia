@@ -1,0 +1,351 @@
+<!--
+  EXAMPLE: Complete section showing all 5 pedagogical layers
+  ===========================================================
+  This is what one fully-scaffolded section looks like. Use it as a template
+  for every concept you teach. Replace the KL-divergence-specific content with
+  your own concept, keeping the structure.
+
+  The 5 layers:
+    1. Intuition prose                    (no math yet)
+    2. Animated geometric SVG             (visual before symbols)
+    3. Formula with color-coded terms     (the math, finally)
+       + symbol-by-symbol bullets
+       + "in plain words" recap
+    4. Worked example callout             (concrete arithmetic)
+    5. Reinforcement / takeaway           (later callback ammo)
+
+  Concept demonstrated: KL divergence D_KL(P || Q) = Σ P log(P/Q)
+-->
+
+<section id="s4-kl-divergence" class="section">
+
+  <h2 id="s4-kl-divergence-h">4. KL divergence — how different are two distributions?</h2>
+
+  <!-- "You are here" pipeline-mini -->
+  <p class="pipeline-mini" aria-label="You are here in the tutorial flow">
+    <span class="step done">Setup</span>
+    <span class="step done">Distributions</span>
+    <span class="step active">KL divergence</span>
+    <span class="step">Cross-entropy</span>
+    <span class="step">Forecasting</span>
+  </p>
+
+  <!-- "What you'll learn" callout sets expectation -->
+  <p class="callout">
+    <strong>What you'll learn:</strong> KL divergence measures how far one probability
+    distribution is from another. It's <em>asymmetric</em> (D(P‖Q) ≠ D(Q‖P)) and it
+    shows up everywhere — scoring a forecast against reality, measuring information gain,
+    data compression, hypothesis testing. After this section you'll know how to compute
+    it, when to use it, and why it has the "covering vs mode-seeking" behavior people
+    warn about.
+  </p>
+
+  <!-- ============================================================
+       LAYER 1: INTUITION (no math)
+       ============================================================ -->
+
+  <p>
+    Suppose you have two probability distributions over the same set of outcomes.
+    Maybe <span class="term-blue">P</span> is the actual observed distribution of
+    demand across five product categories, and <span class="term-blue">Q</span> is
+    last quarter's forecast for those same categories. You want to know:
+    <strong>how different are they?</strong>
+  </p>
+
+  <p>
+    A natural answer would be "the difference between the two probability vectors,
+    element by element" — but that ignores the SCALE of probabilities. A 0.01
+    difference at probability 0.99 is much smaller (relatively) than a 0.01
+    difference at probability 0.01.
+  </p>
+
+  <p>
+    <strong>KL divergence answers this question in the right scale.</strong> It
+    weights each outcome's contribution by how much
+    <span class="term-blue">P</span> cares about that outcome (its probability)
+    and measures the log-ratio of the two probabilities there. Read
+    <code>D<sub>KL</sub>(P‖Q)</code> as the <em>extra surprise</em> the forecast
+    <span class="term-blue">Q</span> costs you versus already knowing the true demand
+    <span class="term-blue">P</span>. The result is in "nats" if you use natural log,
+    "bits" if you use log base 2.
+  </p>
+
+  <p>
+    <strong>The geometry is asymmetric.</strong> If
+    <span class="term-blue">P</span> has mass somewhere
+    <span class="term-blue">Q</span> doesn't, the divergence is huge (you
+    "can't get there from here" under Q). If <span class="term-blue">P</span>
+    has zero mass where <span class="term-blue">Q</span> has mass, it's
+    cheap — P just doesn't care. This asymmetry is the source of the "mode-seeking"
+    vs "covering" behavior you'll hear about.
+  </p>
+
+  <!-- ============================================================
+       LAYER 2: GEOMETRIC SVG (before the formula)
+       ============================================================ -->
+
+  <figure role="figure" aria-labelledby="fig-kl-cap">
+    <svg role="img"
+         aria-labelledby="fig-kl-title fig-kl-desc"
+         viewBox="0 0 820 280"
+         style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+      <title id="fig-kl-title">KL divergence geometry: two distributions over 5 product categories</title>
+      <desc id="fig-kl-desc">Two stacked probability distributions: P (blue, top), the observed demand share,
+        and Q (orange, bottom), the forecast share, over five product categories A through E. Observed demand
+        puts most mass on categories B and C; the forecast puts most mass on C and D. The per-outcome KL
+        contributions P_i × log(P_i / Q_i) are shown below as a sum; category B contributes most because
+        observed demand heavily favors B but the forecast does not.</desc>
+
+      <style>
+        #fig-kl-fig {
+          --bg: #0f1117; --panel-2: #1c2030; --text: #e6e8ee; --muted: #8d94a8;
+          --p-color: #7aa2f7; --q-color: #fb923c; --pos: #10b981; --neg: #ef4444;
+        }
+        #fig-kl-fig .lbl { font-family: ui-monospace, monospace; font-size: 11px; fill: var(--text); }
+        #fig-kl-fig .muted { font-family: system-ui, sans-serif; font-size: 11px; fill: var(--muted); }
+        #fig-kl-fig .title { font-family: system-ui, sans-serif; font-size: 12px; fill: var(--text); font-weight: 600; }
+      </style>
+
+      <g id="fig-kl-fig">
+
+        <!-- Distribution P (blue, top half) -->
+        <text x="20" y="30" class="title" fill="var(--p-color)">P (observed)</text>
+        <!-- P: A=0.05, B=0.40, C=0.30, D=0.20, E=0.05.  Heights = P * 80 px -->
+        <!-- A: 4px, B: 32px, C: 24px, D: 16px, E: 4px -->
+        <rect x="80"  y="62" width="100" height="4"  fill="var(--p-color)" opacity="0.9" rx="2"/>
+        <rect x="200" y="34" width="100" height="32" fill="var(--p-color)" opacity="0.9" rx="2"/>
+        <rect x="320" y="42" width="100" height="24" fill="var(--p-color)" opacity="0.9" rx="2"/>
+        <rect x="440" y="50" width="100" height="16" fill="var(--p-color)" opacity="0.9" rx="2"/>
+        <rect x="560" y="62" width="100" height="4"  fill="var(--p-color)" opacity="0.9" rx="2"/>
+
+        <text x="130" y="58" text-anchor="middle" class="lbl">0.05</text>
+        <text x="250" y="30" text-anchor="middle" class="lbl" fill="var(--p-color)" font-weight="600">0.40</text>
+        <text x="370" y="38" text-anchor="middle" class="lbl">0.30</text>
+        <text x="490" y="46" text-anchor="middle" class="lbl">0.20</text>
+        <text x="610" y="58" text-anchor="middle" class="lbl">0.05</text>
+
+        <!-- Axis labels -->
+        <text x="130" y="88" text-anchor="middle" class="muted">A</text>
+        <text x="250" y="88" text-anchor="middle" class="muted">B</text>
+        <text x="370" y="88" text-anchor="middle" class="muted">C</text>
+        <text x="490" y="88" text-anchor="middle" class="muted">D</text>
+        <text x="610" y="88" text-anchor="middle" class="muted">E</text>
+
+        <line x1="60" y1="100" x2="720" y2="100" stroke="var(--line, #2a2f42)" stroke-width="1"/>
+
+        <!-- Distribution Q (orange, middle) -->
+        <text x="20" y="120" class="title" fill="var(--q-color)">Q (forecast)</text>
+        <!-- Q: A=0.10, B=0.10, C=0.40, D=0.30, E=0.10.  Heights = Q * 80 -->
+        <!-- A: 8, B: 8, C: 32, D: 24, E: 8 -->
+        <rect x="80"  y="124" width="100" height="8"  fill="var(--q-color)" opacity="0.9" rx="2"/>
+        <rect x="200" y="124" width="100" height="8"  fill="var(--q-color)" opacity="0.9" rx="2"/>
+        <rect x="320" y="100" width="100" height="32" fill="var(--q-color)" opacity="0.9" rx="2"/>
+        <rect x="440" y="108" width="100" height="24" fill="var(--q-color)" opacity="0.9" rx="2"/>
+        <rect x="560" y="124" width="100" height="8"  fill="var(--q-color)" opacity="0.9" rx="2"/>
+
+        <text x="130" y="119" text-anchor="middle" class="lbl">0.10</text>
+        <text x="250" y="119" text-anchor="middle" class="lbl">0.10</text>
+        <text x="370" y="96" text-anchor="middle" class="lbl">0.40</text>
+        <text x="490" y="104" text-anchor="middle" class="lbl">0.30</text>
+        <text x="610" y="119" text-anchor="middle" class="lbl">0.10</text>
+
+        <line x1="60" y1="148" x2="720" y2="148" stroke="var(--line, #2a2f42)" stroke-width="1"/>
+
+        <!-- Per-outcome KL contribution: P_i * log(P_i / Q_i) -->
+        <!-- A: 0.05 * log(0.05/0.10) = 0.05 * -0.693 = -0.035 (small negative)
+             B: 0.40 * log(0.40/0.10) = 0.40 *  1.386 =  0.554 (large positive)
+             C: 0.30 * log(0.30/0.40) = 0.30 * -0.288 = -0.086 (small negative)
+             D: 0.20 * log(0.20/0.30) = 0.20 * -0.405 = -0.081 (small negative)
+             E: 0.05 * log(0.05/0.10) = 0.05 * -0.693 = -0.035 (small negative)
+             Sum = 0.317 nats -->
+        <text x="20" y="170" class="title">KL contribution per outcome (P_i × log(P_i / Q_i))</text>
+
+        <line x1="80" y1="220" x2="720" y2="220" stroke="var(--muted)" stroke-width="0.7"/>
+        <text x="60" y="224" text-anchor="end" class="muted">0</text>
+
+        <!-- Bars: scale = 100 px per unit so 0.554 → 55 px height -->
+        <!-- A: -0.035 → -3.5 px → bar from y=220 to y=223.5, height=3.5 -->
+        <rect x="100" y="220" width="60" height="3.5" fill="var(--neg)" opacity="0.7" rx="2"/>
+        <text x="130" y="234" text-anchor="middle" class="lbl" fill="var(--muted)">-0.04</text>
+
+        <!-- B: +0.554 → 55.4 px → bar from y=164.6 to y=220 -->
+        <rect x="220" y="164.6" width="60" height="55.4" fill="var(--pos)" opacity="0.85" rx="2"/>
+        <text x="250" y="160" text-anchor="middle" class="lbl" fill="var(--pos)" font-weight="600">+0.55</text>
+
+        <!-- C: -0.086 → -8.6 px -->
+        <rect x="340" y="220" width="60" height="8.6" fill="var(--neg)" opacity="0.7" rx="2"/>
+        <text x="370" y="238" text-anchor="middle" class="lbl" fill="var(--muted)">-0.09</text>
+
+        <!-- D: -0.081 → -8.1 px -->
+        <rect x="460" y="220" width="60" height="8.1" fill="var(--neg)" opacity="0.7" rx="2"/>
+        <text x="490" y="238" text-anchor="middle" class="lbl" fill="var(--muted)">-0.08</text>
+
+        <!-- E: -0.035 → -3.5 px -->
+        <rect x="580" y="220" width="60" height="3.5" fill="var(--neg)" opacity="0.7" rx="2"/>
+        <text x="610" y="234" text-anchor="middle" class="lbl" fill="var(--muted)">-0.04</text>
+
+        <!-- Sum readout -->
+        <text x="720" y="200" text-anchor="end" class="lbl" font-weight="600">
+          Σ = 0.317 nats
+        </text>
+        <text x="720" y="216" text-anchor="end" class="muted">
+          = D_KL(P‖Q)
+        </text>
+
+      </g>
+    </svg>
+    <figcaption id="fig-kl-cap">
+      <strong>Figure 4.</strong> Category <em>B</em> dominates the KL: observed demand heavily
+      concentrates on B (40% of sales) while the forecast assigned only 10% there. The other four
+      categories contribute negative log-ratios that partly cancel, but B's
+      <code>0.40 × log(4) = 0.55</code> dwarfs them. Total
+      <code>D<sub>KL</sub>(P‖Q) = 0.317</code> nats. <em>Notice</em>: individual bars can be
+      negative; the sum is always ≥ 0.
+    </figcaption>
+  </figure>
+
+  <!-- ============================================================
+       LAYER 3: FORMULA with color-coded terms
+       ============================================================ -->
+
+  <p><strong>The formula.</strong> The KL divergence from
+    <span class="term-blue">P</span> to <span class="term-blue">Q</span>
+    over a discrete outcome space is:</p>
+
+  \[ \textcolor{#ec4899}{D_{\text{KL}}}(\textcolor{#7aa2f7}{P} \,\|\, \textcolor{#7aa2f7}{Q})
+      = \sum_{i} \textcolor{#7aa2f7}{P}(\textcolor{#10b981}{i}) \,
+                 \log \frac{\textcolor{#7aa2f7}{P}(\textcolor{#10b981}{i})}{\textcolor{#7aa2f7}{Q}(\textcolor{#10b981}{i})} \]
+
+  <ul>
+    <li><span class="term-magenta">D<sub>KL</sub></span> — the divergence; the quantity we
+      compute. Units: nats (natural log) or bits (log<sub>2</sub>).</li>
+    <li><span class="term-blue">P, Q</span> — two probability distributions over the same
+      outcome space (here, observed demand and the forecast).</li>
+    <li><span class="term-green">i</span> — index over outcomes (here: product categories A, B, C, D, E).</li>
+    <li><strong>The weight <code>P(i)</code></strong> — each category's log-ratio contribution
+      is weighted by how much <em>observed demand P</em> puts there. P puts 40% mass on B → B's
+      log-ratio gets a 0.40 multiplier.</li>
+    <li><strong>The log-ratio <code>log(P(i) / Q(i))</code></strong> — measures the relative
+      excess of P over Q at outcome i. Positive when P > Q; negative when P < Q.</li>
+  </ul>
+
+  <p><strong>In plain words:</strong> for each outcome, take how much P cares about it
+    (its probability), multiply by the log of how much P prefers it relative to Q, and
+    sum across all outcomes. If P and Q agree everywhere, the log is zero everywhere,
+    and KL = 0. If they disagree, the worst disagreement (weighted by P) dominates.</p>
+
+  <!-- Notation cheatsheet (collapsible) -->
+  <details style="margin: 12px 0;">
+    <summary style="cursor: pointer; color: var(--muted); font-size: 13px;">
+      Show notation cheatsheet
+    </summary>
+    <dl class="cheatsheet" style="margin-top: 8px;">
+      <dt>\(D_{\text{KL}}\)</dt> <dd>KL divergence (always ≥ 0)</dd>
+      <dt>\(P, Q\)</dt>           <dd>two probability distributions</dd>
+      <dt>\(\sum_i\)</dt>          <dd>sum over discrete outcomes</dd>
+      <dt>\(\log\)</dt>            <dd>natural log (gives "nats")</dd>
+      <dt>\(\,\|\,\)</dt>          <dd>"from … to …" — asymmetric: D(P‖Q) ≠ D(Q‖P)</dd>
+    </dl>
+  </details>
+
+  <!-- ============================================================
+       LAYER 4: WORKED EXAMPLE (concrete arithmetic)
+       ============================================================ -->
+
+  <div class="callout worked-example">
+    <p class="callout-title"><strong>Worked example: D<sub>KL</sub>(P‖Q) for the distributions in Figure 4</strong></p>
+
+    <p>Given observed demand
+      <code>P = [0.05, 0.40, 0.30, 0.20, 0.05]</code> and forecast
+      <code>Q = [0.10, 0.10, 0.40, 0.30, 0.10]</code> over product categories A–E
+      (each vector sums to 1):
+    </p>
+
+    <p>Compute each per-outcome contribution <code>P(i) × log(P(i) / Q(i))</code>:</p>
+    <ul>
+      <li><strong>A:</strong> <code>0.05 × log(0.05 / 0.10) = 0.05 × log(0.5) = 0.05 × (−0.693) = −0.0347</code></li>
+      <li><strong>B:</strong> <code>0.40 × log(0.40 / 0.10) = 0.40 × log(4)    = 0.40 × (+1.386) = +0.5545</code></li>
+      <li><strong>C:</strong> <code>0.30 × log(0.30 / 0.40) = 0.30 × log(0.75) = 0.30 × (−0.288) = −0.0863</code></li>
+      <li><strong>D:</strong> <code>0.20 × log(0.20 / 0.30) = 0.20 × log(0.667)= 0.20 × (−0.405) = −0.0811</code></li>
+      <li><strong>E:</strong> <code>0.05 × log(0.05 / 0.10) = 0.05 × log(0.5)  = 0.05 × (−0.693) = −0.0347</code></li>
+    </ul>
+
+    <p><strong>Sum:</strong> <code>−0.0347 + 0.5545 + (−0.0863) + (−0.0811) + (−0.0347) = 0.3177 nats</code></p>
+
+    <p>So <code>D<sub>KL</sub>(P‖Q) ≈ 0.317 nats</code> of extra surprise the forecast costs.
+      Note that <em>B alone contributes 0.55</em> — more than the entire sum, because the other
+      four contributions are negative (the forecast Q exceeds observed demand P there) and
+      partially cancel. KL divergence is non-negative as a sum, but its per-outcome contributions
+      can be either sign.</p>
+
+    <p><strong>Try the asymmetry yourself:</strong> compute <code>D<sub>KL</sub>(Q‖P)</code>.
+      You'll get a different number (~0.31). The two are NOT interchangeable.</p>
+  </div>
+
+  <!-- ============================================================
+       LAYER 5: TAKEAWAY / reinforcement callback ammo
+       ============================================================ -->
+
+  <p><strong>Takeaway.</strong> KL divergence is <em>weighted log-disagreement</em> — each
+    outcome's contribution scales with how much
+    <span class="term-blue">P</span> cares about it. That's why "<span class="term-blue">P</span>
+    has mass where <span class="term-blue">Q</span> doesn't" is catastrophic (huge positive
+    contribution) while "<span class="term-blue">Q</span> has mass where
+    <span class="term-blue">P</span> doesn't" is free (no contribution).</p>
+
+  <p>You'll see this asymmetry again in §[N+1] (cross-entropy, which splits into the entropy
+    of <span class="term-blue">P</span> plus <code>D<sub>KL</sub>(P‖Q)</code> — the forecast
+    paying when it puts probability where demand doesn't), and again in §[N+2] (forecast
+    scoring, where the per-category log-ratios here become the penalty you accumulate over
+    time).</p>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+
+     This is the canonical section structure. EVERY section that introduces a
+     formula should follow this pattern. EVERY layer should be present:
+
+       ┌──────────────────────────────────────────────────────────────────┐
+       │ pipeline-mini "you are here"  (orientation)                      │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ "What you'll learn" callout   (set expectation)                  │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ Layer 1: intuition prose      (no math, no symbols)              │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ Layer 2: geometric SVG        (visual before symbols)            │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ Layer 3a: formula             (color-coded \textcolor{})         │
+       │ Layer 3b: symbol bullets      (each symbol explained)            │
+       │ Layer 3c: "in plain words"    (re-state in English)              │
+       │ Layer 3d: notation cheatsheet (optional <details>)               │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ Layer 4: worked example       (concrete arithmetic, every step)  │
+       ├──────────────────────────────────────────────────────────────────┤
+       │ Layer 5: takeaway + callback  (link forward to later sections)   │
+       └──────────────────────────────────────────────────────────────────┘
+
+     The reader who skips ANY single layer can still get the concept. The
+     reader who reads ALL layers consolidates it. Scaffolded redundancy.
+
+     Color discipline:
+       - P and Q are distributions → use --term-blue (blue, #7aa2f7)
+       - i indexes target outcomes → use --term-green (green, #10b981)
+       - D_KL is the measured "cost-like" quantity → use --term-magenta (pink, #ec4899)
+
+     Worked example discipline:
+       - Real numbers, not symbols
+       - Show every multiplication and addition
+       - End with a 1-sentence interpretation
+       - Note what could be tried as a follow-up exercise
+
+     Takeaway discipline:
+       - Use the concept's NAME and COLOR from above
+       - Forward-reference §N+1 and §N+2 where this idea appears next
+       - This makes later sections feel "earned" not "first-time"
+
+     ============================================================================ -->

@@ -1,0 +1,199 @@
+<!--
+  EXAMPLE: Heatmap / matrix visualization
+  ========================================
+  Static figure showing a 2D grid of values, color-encoded by magnitude.
+  Used for: sales grids, risk matrices, correlation tables, availability
+  calendars, and cross-tabulations of any kind.
+
+  Concrete example: regional sales heatmap showing 5 regions × 4 quarters.
+  Each cell is colored by sales magnitude (green = high, red = low). The
+  top-performing region is bordered for emphasis.
+
+  Use when:
+    - The data is naturally 2D (two categorical axes)
+    - The story is "look at where it's bright vs dim"
+    - You need to compare many values at a glance
+-->
+
+<figure role="figure" aria-labelledby="fig-heat-cap" aria-describedby="fig-heat-desc">
+<svg role="img"
+     aria-labelledby="fig-heat-title fig-heat-desc"
+     viewBox="0 0 820 320"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-heat-title">Sales heatmap: 5 regions × 4 quarters</title>
+  <desc id="fig-heat-desc">A heatmap with 5 rows (regions: North, South, East, West, Central) and
+    4 columns (quarters: Q1, Q2, Q3, Q4). Each cell shows quarterly sales in millions of dollars, colored
+    red to green by magnitude (red=lowest, green=highest). The "Central" row at the bottom has a thicker
+    border indicating it's the top-performing region. A color scale legend appears at the bottom.</desc>
+
+  <style>
+    #fig-heat-svg .cell-bg  { stroke: #2a2f42; stroke-width: 1; }
+    #fig-heat-svg .cell-val { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 600; fill: #0f1117; }
+    #fig-heat-svg .cell-val-light { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 600; fill: #e6e8ee; }
+    #fig-heat-svg .row-lbl  { font-family: system-ui, sans-serif; font-size: 12px; fill: #e6e8ee; }
+    #fig-heat-svg .col-lbl  { font-family: system-ui, sans-serif; font-size: 12px; fill: #e6e8ee; font-weight: 600; }
+    #fig-heat-svg .muted    { font-family: system-ui, sans-serif; font-size: 11px; fill: #8d94a8; }
+    #fig-heat-svg .title    { font-family: system-ui, sans-serif; font-size: 13px; fill: #e6e8ee; font-weight: 600; }
+    #fig-heat-svg .highlight-border { fill: none; stroke: #fbbf24; stroke-width: 3; }
+  </style>
+
+  <g id="fig-heat-svg">
+
+    <text x="20" y="28" class="title">Regional sales — 5 regions across 4 quarters</text>
+
+    <!-- ============== COLUMN HEADERS ============== -->
+    <!-- Cells: 120 px wide × 40 px tall. Grid starts at x=180, y=60. -->
+    <text x="240" y="50" text-anchor="middle" class="col-lbl">Q1</text>
+    <text x="360" y="50" text-anchor="middle" class="col-lbl">Q2</text>
+    <text x="480" y="50" text-anchor="middle" class="col-lbl">Q3</text>
+    <text x="600" y="50" text-anchor="middle" class="col-lbl">Q4</text>
+
+    <text x="180" y="50" text-anchor="end" class="muted">region ↓ / quarter →</text>
+
+    <!-- ============== ROW 1: North ============== -->
+    <text x="170" y="84" text-anchor="end" class="row-lbl">North</text>
+
+    <!-- North Q1 $2.1M = orange (moderate) -->
+    <rect class="cell-bg" x="180" y="60" width="120" height="40" fill="#fb923c"/>
+    <text x="240" y="86" text-anchor="middle" class="cell-val">$2.1M</text>
+
+    <!-- North Q2 $2.8M = orange (moderate) -->
+    <rect class="cell-bg" x="300" y="60" width="120" height="40" fill="#fb923c"/>
+    <text x="360" y="86" text-anchor="middle" class="cell-val">$2.8M</text>
+
+    <!-- North Q3 $3.4M = orange (moderate) -->
+    <rect class="cell-bg" x="420" y="60" width="120" height="40" fill="#fb923c"/>
+    <text x="480" y="86" text-anchor="middle" class="cell-val">$3.4M</text>
+
+    <!-- North Q4 $4.2M = yellow (strong) -->
+    <rect class="cell-bg" x="540" y="60" width="120" height="40" fill="#fbbf24"/>
+    <text x="600" y="86" text-anchor="middle" class="cell-val">$4.2M</text>
+
+    <!-- ============== ROW 2: South ============== -->
+    <text x="170" y="124" text-anchor="end" class="row-lbl">South</text>
+
+    <rect class="cell-bg" x="180" y="100" width="120" height="40" fill="#fb923c"/>
+    <text x="240" y="126" text-anchor="middle" class="cell-val">$3.2M</text>
+
+    <rect class="cell-bg" x="300" y="100" width="120" height="40" fill="#fb923c"/>
+    <text x="360" y="126" text-anchor="middle" class="cell-val">$3.6M</text>
+
+    <rect class="cell-bg" x="420" y="100" width="120" height="40" fill="#fbbf24"/>
+    <text x="480" y="126" text-anchor="middle" class="cell-val">$4.1M</text>
+
+    <rect class="cell-bg" x="540" y="100" width="120" height="40" fill="#fbbf24"/>
+    <text x="600" y="126" text-anchor="middle" class="cell-val">$4.8M</text>
+
+    <!-- ============== ROW 3: East ============== -->
+    <text x="170" y="164" text-anchor="end" class="row-lbl">East</text>
+
+    <rect class="cell-bg" x="180" y="140" width="120" height="40" fill="#ef4444"/>
+    <text x="240" y="166" text-anchor="middle" class="cell-val-light">$1.6M</text>
+
+    <rect class="cell-bg" x="300" y="140" width="120" height="40" fill="#fb923c"/>
+    <text x="360" y="166" text-anchor="middle" class="cell-val">$2.3M</text>
+
+    <rect class="cell-bg" x="420" y="140" width="120" height="40" fill="#fb923c"/>
+    <text x="480" y="166" text-anchor="middle" class="cell-val">$3.0M</text>
+
+    <rect class="cell-bg" x="540" y="140" width="120" height="40" fill="#fb923c"/>
+    <text x="600" y="166" text-anchor="middle" class="cell-val">$3.9M</text>
+
+    <!-- ============== ROW 4: West ============== -->
+    <text x="170" y="204" text-anchor="end" class="row-lbl">West</text>
+
+    <rect class="cell-bg" x="180" y="180" width="120" height="40" fill="#ef4444"/>
+    <text x="240" y="206" text-anchor="middle" class="cell-val-light">$1.2M</text>
+
+    <rect class="cell-bg" x="300" y="180" width="120" height="40" fill="#ef4444"/>
+    <text x="360" y="206" text-anchor="middle" class="cell-val-light">$1.8M</text>
+
+    <rect class="cell-bg" x="420" y="180" width="120" height="40" fill="#fb923c"/>
+    <text x="480" y="206" text-anchor="middle" class="cell-val">$2.5M</text>
+
+    <rect class="cell-bg" x="540" y="180" width="120" height="40" fill="#fb923c"/>
+    <text x="600" y="206" text-anchor="middle" class="cell-val">$3.1M</text>
+
+    <!-- ============== ROW 5: Central (TOP REGION) ============== -->
+    <text x="170" y="244" text-anchor="end" class="row-lbl" font-weight="600" fill="#fbbf24">Central (top region)</text>
+
+    <rect class="cell-bg" x="180" y="220" width="120" height="40" fill="#fbbf24"/>
+    <text x="240" y="246" text-anchor="middle" class="cell-val" font-weight="700">$4.5M</text>
+
+    <rect class="cell-bg" x="300" y="220" width="120" height="40" fill="#10b981"/>
+    <text x="360" y="246" text-anchor="middle" class="cell-val" font-weight="700">$5.2M</text>
+
+    <rect class="cell-bg" x="420" y="220" width="120" height="40" fill="#10b981"/>
+    <text x="480" y="246" text-anchor="middle" class="cell-val" font-weight="700">$5.9M</text>
+
+    <rect class="cell-bg" x="540" y="220" width="120" height="40" fill="#10b981"/>
+    <text x="600" y="246" text-anchor="middle" class="cell-val" font-weight="700">$6.7M</text>
+
+    <!-- Highlight border around the top-performing region -->
+    <rect class="highlight-border" x="178" y="218" width="484" height="44"/>
+
+    <!-- ============== COLOR SCALE LEGEND ============== -->
+    <text x="180" y="288" class="muted">color scale:</text>
+    <rect x="250" y="278" width="22" height="14" fill="#ef4444"/>
+    <text x="282" y="289" class="muted">low</text>
+    <rect x="322" y="278" width="22" height="14" fill="#fb923c"/>
+    <text x="354" y="289" class="muted">moderate</text>
+    <rect x="430" y="278" width="22" height="14" fill="#fbbf24"/>
+    <text x="462" y="289" class="muted">strong</text>
+    <rect x="540" y="278" width="22" height="14" fill="#10b981"/>
+    <text x="572" y="289" class="muted">highest</text>
+
+    <text x="180" y="310" class="muted" font-style="italic">
+      thick yellow border = the top-performing region · cell color encodes sales magnitude (shared $M scale across all regions)
+    </text>
+
+  </g>
+</svg>
+
+<figcaption id="fig-heat-cap">
+  <strong>Figure N.</strong> Regional sales heatmap. Every region grows quarter over quarter, but Central
+  dominates — climbing from $4.5M in Q1 to $6.7M in Q4, far ahead of the pack and the only region to clear
+  $5M. West stays coldest throughout, reaching just $3.1M by Q4, while North and South hold the mid-field.
+  Read the columns to see the whole company trending up into Q4.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The heatmap pattern in 5 rules:
+
+     1. COLOR ENCODES MAGNITUDE on a shared scale.
+        $6.7M is green because it's high across ALL regions and quarters, not just
+        within its own row. A shared color scale makes "hot vs cold" cells instantly
+        readable.
+
+     2. TEXT INSIDE EVERY CELL.
+        Color alone doesn't tell you the magnitude. Always show the number.
+
+     3. DARK TEXT ON BRIGHT CELLS, LIGHT TEXT ON DARK CELLS.
+        On red (#ef4444) use white text. On yellow/green use dark text. Otherwise
+        the bright cells become unreadable.
+
+     4. BORDER THE HIGHLIGHTED / KEY ROW.
+        The reader's first question is "which one stands out?" Make it visually
+        unmistakable.
+
+     5. LEGEND AT THE BOTTOM with the color scale + the row marker meaning.
+        Without it, readers see colors and can't decode them.
+
+     Use case checklist:
+       ✓ Sales grids (regions × quarters)
+       ✓ Risk matrices (likelihood × impact)
+       ✓ Correlation tables (variable × variable)
+       ✓ Availability calendars (resource × day)
+       ✓ Cross-tabulations of any kind
+       ✗ NOT for time series (use figure-trajectory.html)
+       ✗ NOT for hierarchies (use figure-lineage-tree.html)
+
+     ACCESSIBILITY note: color-only encoding fails WCAG 1.4.1 for colorblind users.
+     ALWAYS pair color with text values inside cells. The text makes the heatmap
+     navigable by screen reader and colorblind-friendly.
+     ============================================================================ -->

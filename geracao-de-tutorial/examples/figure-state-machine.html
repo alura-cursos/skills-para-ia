@@ -1,0 +1,184 @@
+<!--
+  EXAMPLE: State machine diagram (states + transitions)
+  ======================================================
+  Static figure showing states (circles or rounded rects) and transitions
+  (labeled arrows) between them. Used for protocols, lifecycle modeling,
+  parsing, anything with discrete state.
+
+  Concrete example: TCP connection states. Shows the canonical 11 states
+  with the events that trigger transitions.
+
+  Use when:
+    - Teaching a protocol with discrete states
+    - Showing object lifecycle (created, running, paused, terminated)
+    - Documenting parser/lexer states
+    - Explaining UI flow / form wizard
+-->
+
+<figure role="figure" aria-labelledby="fig-fsm-cap" aria-describedby="fig-fsm-desc">
+<svg role="img"
+     aria-labelledby="fig-fsm-title fig-fsm-desc"
+     viewBox="0 0 820 360"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-fsm-title">Order lifecycle state machine</title>
+  <desc id="fig-fsm-desc">A state machine diagram with 5 states (Pending, Paid, Shipped, Delivered,
+    Cancelled) shown as colored circles. Arrows between them are labeled with the events that trigger
+    each transition. Pending → Paid on "payment_succeeded"; Paid → Shipped on "ship_confirmed";
+    Shipped → Delivered on "delivery_confirmed"; Pending → Cancelled on "cancel_requested";
+    Paid → Cancelled on "refund_issued". Delivered is the terminal happy state (double border).
+    Cancelled is the terminal sad state (red border).</desc>
+
+  <style>
+    #fig-fsm-svg .state       { stroke-width: 2; rx: 30; ry: 30; }
+    #fig-fsm-svg .s-pending   { fill: #1c2030; stroke: #8d94a8; }
+    #fig-fsm-svg .s-paid      { fill: #1c2030; stroke: #fbbf24; }
+    #fig-fsm-svg .s-shipped   { fill: #1c2030; stroke: #7aa2f7; }
+    #fig-fsm-svg .s-delivered { fill: #1c2030; stroke: #10b981; stroke-width: 3; }
+    #fig-fsm-svg .s-cancelled { fill: #1c2030; stroke: #ef4444; stroke-dasharray: 5 3; }
+    #fig-fsm-svg .terminal-inner { fill: none; stroke: #10b981; stroke-width: 1.5; }
+    #fig-fsm-svg .trans       { stroke: #8d94a8; stroke-width: 1.5; fill: none; }
+    #fig-fsm-svg .trans-bad   { stroke: #ef4444; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+    #fig-fsm-svg .lbl         { font-family: system-ui, sans-serif; fill: #e6e8ee; font-size: 12px; text-anchor: middle; font-weight: 600; }
+    #fig-fsm-svg .ev          { font-family: ui-monospace, monospace; fill: #fbbf24; font-size: 11px; }
+    #fig-fsm-svg .ev-bad      { font-family: ui-monospace, monospace; fill: #ef4444; font-size: 11px; }
+    #fig-fsm-svg .muted       { font-family: system-ui, sans-serif; fill: #8d94a8; font-size: 11px; }
+  </style>
+
+  <defs>
+    <marker id="arr-fsm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8d94a8"/>
+    </marker>
+    <marker id="arr-fsm-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <g id="fig-fsm-svg">
+
+    <text x="20" y="28" font-family="system-ui,sans-serif" fill="#e6e8ee" font-size="13" font-weight="600">
+      Order lifecycle — finite state machine
+    </text>
+
+    <!-- =================== STATES =================== -->
+    <!-- States laid out in a roughly linear chain with cancel branches downward -->
+
+    <!-- Pending (start) -->
+    <rect class="state s-pending" x="50" y="110" width="120" height="60"/>
+    <text x="110" y="138" class="lbl">Pending</text>
+    <text x="110" y="158" class="muted">(initial)</text>
+
+    <!-- Paid -->
+    <rect class="state s-paid" x="240" y="110" width="120" height="60"/>
+    <text x="300" y="138" class="lbl">Paid</text>
+    <text x="300" y="158" class="muted">payment cleared</text>
+
+    <!-- Shipped -->
+    <rect class="state s-shipped" x="430" y="110" width="120" height="60"/>
+    <text x="490" y="138" class="lbl">Shipped</text>
+    <text x="490" y="158" class="muted">tracking number</text>
+
+    <!-- Delivered (terminal happy) -->
+    <rect class="state s-delivered" x="620" y="110" width="120" height="60"/>
+    <rect class="terminal-inner" x="625" y="115" width="110" height="50" rx="25" ry="25"/>
+    <text x="680" y="138" class="lbl" fill="#10b981">Delivered</text>
+    <text x="680" y="158" class="muted">✓ terminal</text>
+
+    <!-- Cancelled (terminal sad) -->
+    <rect class="state s-cancelled" x="335" y="260" width="160" height="60"/>
+    <text x="415" y="288" class="lbl" fill="#ef4444">Cancelled</text>
+    <text x="415" y="308" class="muted">⊘ terminal</text>
+
+    <!-- =================== INITIAL STATE MARKER =================== -->
+    <circle cx="20" cy="140" r="6" fill="#fbbf24"/>
+    <line class="trans" x1="26" y1="140" x2="50" y2="140" marker-end="url(#arr-fsm)"/>
+
+    <!-- =================== TRANSITIONS (happy path) =================== -->
+
+    <!-- Pending → Paid -->
+    <line class="trans" x1="170" y1="140" x2="240" y2="140" marker-end="url(#arr-fsm)"/>
+    <text x="205" y="132" class="ev" text-anchor="middle">payment_succeeded</text>
+
+    <!-- Paid → Shipped -->
+    <line class="trans" x1="360" y1="140" x2="430" y2="140" marker-end="url(#arr-fsm)"/>
+    <text x="395" y="132" class="ev" text-anchor="middle">ship_confirmed</text>
+
+    <!-- Shipped → Delivered -->
+    <line class="trans" x1="550" y1="140" x2="620" y2="140" marker-end="url(#arr-fsm)"/>
+    <text x="585" y="132" class="ev" text-anchor="middle">delivery_confirmed</text>
+
+    <!-- =================== TRANSITIONS (cancellation paths) =================== -->
+
+    <!-- Pending → Cancelled -->
+    <path class="trans-bad" d="M 110,170 Q 110,220 335,290" marker-end="url(#arr-fsm-bad)"/>
+    <text x="180" y="230" class="ev-bad">cancel_requested</text>
+
+    <!-- Paid → Cancelled -->
+    <path class="trans-bad" d="M 300,170 Q 300,220 380,260" marker-end="url(#arr-fsm-bad)"/>
+    <text x="330" y="220" class="ev-bad">refund_issued</text>
+
+    <!-- =================== LEGEND =================== -->
+    <g transform="translate(580, 260)">
+      <rect x="0" y="0" width="220" height="80" rx="6" fill="#1c2030" stroke="#2a2f42"/>
+      <text x="10" y="18" class="muted" font-size="11" font-weight="600">legend</text>
+
+      <rect x="10" y="26" width="20" height="14" rx="7" fill="none" stroke="#10b981" stroke-width="3"/>
+      <text x="38" y="38" class="muted" font-size="11">terminal happy</text>
+
+      <rect x="10" y="46" width="20" height="14" rx="7" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="38" y="58" class="muted" font-size="11">terminal failure</text>
+
+      <text x="138" y="38" class="ev" font-size="10">happy_event</text>
+      <text x="138" y="58" class="ev-bad" font-size="10">failure_event</text>
+    </g>
+
+  </g>
+</svg>
+
+<figcaption id="fig-fsm-cap">
+  <strong>Figure N.</strong> Order lifecycle state machine. 5 states, 5 transitions (3 happy-path
+  forward, 2 cancellation branches). Double-bordered <em>Delivered</em> is the terminal happy state;
+  dashed-bordered <em>Cancelled</em> is the terminal failure state. Each transition is labeled with
+  the event that triggers it.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The state machine pattern in 6 rules:
+
+     1. STATES AS ROUNDED RECTANGLES (or circles for compact).
+        Use rectangles when each state needs a description; circles when the label
+        alone is sufficient.
+
+     2. INITIAL STATE marked with a solid filled circle + arrow pointing to first state.
+        Conventional UML notation; readers expect it.
+
+     3. TERMINAL STATES marked specially:
+        - Happy terminal: double border in green (UML's "final state" convention).
+        - Failure terminal: dashed border in red (project convention).
+
+     4. TRANSITIONS labeled with EVENTS that cause them.
+        "payment_succeeded" not just "pay". The event name is what fires in code.
+        Color-code by happy (yellow) vs failure (red) event semantics.
+
+     5. ARRANGE STATES LEFT-TO-RIGHT for the happy path.
+        Cancellation/failure branches go DOWN. Reader's eye follows happy path naturally.
+
+     6. EXCLUDE TRANSITIONS THAT NEVER FIRE.
+        If "Delivered → Cancelled" can never happen in your system, don't draw it
+        and write "(impossible)" — just omit. The diagram should encode WHAT IS,
+        not what's theoretically conceivable.
+
+     PROTOCOLS that fit this format:
+       - TCP connection states (11 states; bigger diagram)
+       - Order/payment lifecycle (this example)
+       - JIRA-style ticket flow
+       - User session states (anonymous → authenticated → expired)
+       - HTTP request states (queued → in-flight → completed/failed)
+
+     Don't use FSM for: anything with concurrent state (use statecharts with
+     orthogonal regions, or skip FSMs and use a different formalism).
+     ============================================================================ -->

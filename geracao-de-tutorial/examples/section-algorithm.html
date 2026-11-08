@@ -1,0 +1,230 @@
+<!--
+  EXAMPLE: Section template for an algorithm tutorial
+  ====================================================
+  Adapts the 5-layer pedagogical scaffold for an ALGORITHM concept (rather
+  than a math/formula concept). Differences from examples/section-complete.html:
+
+    Layer 1 — intuition (same as math): plain-English description
+    Layer 2 — GEOMETRY: animation of the algorithm in action, not a static figure
+    Layer 3 — PSEUDOCODE (replaces formula): the algorithm written as steps,
+              annotated with line numbers and complexity callouts
+    Layer 4 — WORKED EXAMPLE: trace one specific input through every iteration,
+              showing state at each step
+    Layer 5 — TAKEAWAY: includes complexity callout + edge cases
+
+  Concrete demonstration: binary search.
+-->
+
+<section id="sN-binary-search" class="section">
+
+  <h2 id="sN-binary-search-h">N. Binary search — log(N) by halving the haystack</h2>
+
+  <p class="pipeline-mini" aria-label="You are here">
+    <span class="step done">Linear search</span>
+    <span class="step active">Binary search</span>
+    <span class="step">Hash lookup</span>
+    <span class="step">Self-balancing trees</span>
+  </p>
+
+  <p class="callout">
+    <strong>What you'll learn:</strong> binary search finds an element in a sorted array
+    in O(log N) time by repeatedly halving the search range. After this section you'll
+    know how it works, when it breaks, and the off-by-one mistake that catches everyone.
+  </p>
+
+  <!-- ============================================================
+       LAYER 1: INTUITION
+       ============================================================ -->
+
+  <p>
+    You're looking up a name in a phone book. Do you start at page 1? No — you flip to roughly
+    the middle, see whether the name you want is in the first or second half, and repeat with that
+    half. Each comparison eliminates half the remaining pages. <strong>Binary search is exactly
+    this strategy, formalized.</strong>
+  </p>
+
+  <p>
+    For an array of N sorted elements, you can find any target in roughly log₂(N) comparisons.
+    1,000,000 elements → 20 comparisons. 1,000,000,000 → 30 comparisons. That's the power of
+    halving: doubling the input adds ONE step.
+  </p>
+
+  <p>
+    <strong>The catch:</strong> the array must be sorted. Sort cost is O(N log N), so binary
+    search is only a win if you'll do MANY lookups against the same dataset. For one-shot lookup,
+    linear scan is fine.
+  </p>
+
+  <!-- ============================================================
+       LAYER 2: GEOMETRIC — animation of the algorithm in action
+       ============================================================ -->
+
+  <figure role="figure" aria-labelledby="anim-bsearch-cap">
+    <svg role="img" aria-labelledby="anim-bsearch-title anim-bsearch-desc"
+         viewBox="0 0 820 220"
+         style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+      <title id="anim-bsearch-title">Binary search animation: searching for 23 in [1, 4, 7, 12, 19, 23, 31]</title>
+      <desc id="anim-bsearch-desc">A 3-phase animation showing binary search on a 7-element array. Phase 1: full
+        array highlighted with low=0, high=6, mid=3 (the element 12). Element 12 is compared with target 23,
+        deemed too small, so the lower half is discarded. Phase 2: search range narrows to indices 4-6 with
+        new mid=5 (element 23). The element 23 matches the target. Phase 3: success indicator at index 5.</desc>
+
+      <!-- ... (full SVG animation; abbreviated for the example skeleton) ... -->
+      <text x="20" y="30" font-family="system-ui" fill="#e6e8ee" font-size="13" font-weight="600">
+        Binary search animation — find 23 in [1, 4, 7, 12, 19, 23, 31]
+      </text>
+      <text x="20" y="60" font-family="system-ui" fill="#8d94a8" font-size="11">
+        Phase 1: lo=0, hi=6, mid=3, A[3]=12 &lt; 23 → discard left half
+      </text>
+      <text x="20" y="78" font-family="system-ui" fill="#8d94a8" font-size="11">
+        Phase 2: lo=4, hi=6, mid=5, A[5]=23 == 23 → FOUND
+      </text>
+      <!-- (In a real tutorial, this would be a complete animation like examples/animation-3phase.html.) -->
+    </svg>
+    <figcaption id="anim-bsearch-cap">
+      <strong>Animation.</strong> Searching for 23 in a 7-element sorted array. Each phase shows
+      the active search range, the midpoint element being compared, and the half being discarded.
+      Two comparisons suffice: 12 (too small) and 23 (match).
+    </figcaption>
+  </figure>
+
+  <!-- ============================================================
+       LAYER 3: PSEUDOCODE (replaces the formula)
+       ============================================================ -->
+
+  <p><strong>The algorithm.</strong> Maintain a search range <code>[lo, hi]</code>. At each step,
+  examine the middle element. If it equals the target, done. If it's too small, discard the lower
+  half (set lo = mid + 1). If too large, discard the upper half (hi = mid − 1). Stop when the range
+  is empty.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="file-path">binary_search.py</span>
+      <span class="lang-tag">python</span>
+    </div>
+<pre><code class="language-python">def binary_search(arr, target):
+    lo, hi = 0, len(arr) - 1          # 1: invariant: target, if present, is in arr[lo..hi]
+    while lo <= hi:                   # 2: empty range when lo > hi
+        mid = (lo + hi) // 2          # 3: integer midpoint
+        if arr[mid] == target:        # 4: found
+            return mid                #
+        elif arr[mid] < target:       # 5: target is in upper half
+            lo = mid + 1              #    discard arr[lo..mid]
+        else:                         # 6: target is in lower half
+            hi = mid - 1              #    discard arr[mid..hi]
+    return -1                         # 7: not found
+</code></pre>
+  </div>
+
+  <p><strong>Line-by-line:</strong></p>
+  <ul>
+    <li><strong>Line 1.</strong> The invariant: throughout the loop, if the target exists in the
+      array, it sits at some index in <code>[lo, hi]</code>. Both endpoints inclusive.</li>
+    <li><strong>Line 2.</strong> Loop condition <code>lo <= hi</code> — when these cross, the range
+      is empty and the target wasn't found. <em>This is where the famous off-by-one lives.</em></li>
+    <li><strong>Line 3.</strong> <code>(lo + hi) // 2</code> can overflow on huge arrays in
+      fixed-width integer languages (Java, C++). Use <code>lo + (hi - lo) // 2</code> for safety.
+      In Python it doesn't matter — integers are arbitrary-precision.</li>
+    <li><strong>Lines 5-6.</strong> The CRUCIAL detail: when discarding a half, exclude <code>mid</code>
+      itself (<code>mid + 1</code> or <code>mid − 1</code>). If you write <code>lo = mid</code>, you
+      can infinite-loop when <code>lo + 1 == hi</code>.</li>
+  </ul>
+
+  <p><strong>In plain words:</strong> repeatedly halve the search range, eliminating the side that
+  can't contain the target, until you either find it or the range is empty.</p>
+
+  <!-- Complexity callout — algorithm-specific layer -->
+  <div class="callout deep">
+    <p class="callout-title"><strong>Complexity</strong></p>
+    <ul>
+      <li><strong>Time:</strong> O(log N) — each iteration halves the range, so log₂(N) iterations suffice.</li>
+      <li><strong>Space:</strong> O(1) — only 3 integer variables (lo, hi, mid).</li>
+      <li><strong>Recursion alternative:</strong> O(log N) call stack depth. Slightly worse constant
+        factor, often easier to reason about for first-time learners.</li>
+    </ul>
+  </div>
+
+  <!-- ============================================================
+       LAYER 4: WORKED EXAMPLE (trace through one input)
+       ============================================================ -->
+
+  <div class="callout worked-example">
+    <p class="callout-title"><strong>Worked example: search for 23 in <code>[1, 4, 7, 12, 19, 23, 31]</code></strong></p>
+
+    <p>Initial state: <code>lo = 0, hi = 6, target = 23</code>.</p>
+
+    <table>
+      <caption>Per-iteration state</caption>
+      <thead>
+        <tr><th scope="col">Iteration</th><th scope="col">lo</th><th scope="col">hi</th><th scope="col">mid</th><th scope="col">arr[mid]</th><th scope="col">Compare</th><th scope="col">Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>0</td><td>6</td><td>3</td><td>12</td><td>12 &lt; 23</td><td>lo = 4</td></tr>
+        <tr><td>2</td><td>4</td><td>6</td><td>5</td><td>23</td><td>23 == 23</td><td><strong>return 5</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Result:</strong> found at index 5 in 2 iterations. The 7-element array took ⌈log₂(7)⌉ = 3
+    comparisons in the worst case; we found it in 2.</p>
+
+    <p><strong>Try this:</strong> trace what happens if you search for <code>5</code> (not in the array).
+    You should hit <code>lo &gt; hi</code> after 3 iterations and return -1.</p>
+  </div>
+
+  <!-- ============================================================
+       LAYER 5: TAKEAWAY + edge cases (algorithm-specific bonus)
+       ============================================================ -->
+
+  <p><strong>Takeaway.</strong> Binary search is the prototypical example of <em>halving</em> —
+  reducing problem size by a constant factor per step gives O(log N). You'll see this pattern again
+  in §[N+1] (red-black trees use rotation to maintain logarithmic depth) and §[N+2] (segment trees
+  layer log N halvings recursively).</p>
+
+  <p><strong>Edge cases that catch everyone:</strong></p>
+  <ul>
+    <li><strong>Empty array.</strong> <code>hi = -1</code> means <code>lo &lt;= hi</code> is false at start; returns -1. ✓</li>
+    <li><strong>Single element.</strong> <code>lo = hi = 0</code>; one comparison decides. ✓</li>
+    <li><strong>Duplicates.</strong> Binary search returns SOME index of the target, not necessarily the
+      first or last. If you need the leftmost/rightmost occurrence, write a different variant — see §[N+3].</li>
+    <li><strong>Unsorted input.</strong> Algorithm silently returns wrong answer. Always assert <code>sorted(arr)</code>
+      in dev builds.</li>
+  </ul>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The algorithm section pattern adapts the 5 layers:
+
+     Layer 3 changes the MOST: formula → pseudocode block.
+       - Use <pre><code class="language-X"> for syntax highlighting (Prism.js auto-detects)
+       - Wrap in a .code-block div with .code-header for the file path + lang tag
+       - Annotate each line with a comment + walk through line-by-line below the code
+
+     Layer 4 changes: arithmetic → state-trace table.
+       - Use a <table> with one row per iteration
+       - Columns are the algorithm's state variables
+       - End with the verified result
+
+     ADDITIONS specific to algorithm sections:
+       - Complexity callout (always; both time and space)
+       - Edge cases callout (the gotchas that catch everyone)
+       - Recursion vs iteration comparison (when applicable)
+
+     ALGORITHMS that work well in this format:
+       Sorting: quicksort, mergesort, insertion sort, radix sort
+       Searching: binary search, BFS, DFS, A*
+       Data structures: hash map insert, AVL rotation, heap percolate
+       Graph: Dijkstra, Bellman-Ford, topological sort
+       Dynamic programming: edit distance, longest common subsequence
+
+     Algorithms that DON'T fit this format:
+       - Approximation algorithms (need probability analysis, not just trace)
+       - Randomized algorithms (need expected-case analysis)
+       - Distributed algorithms (need sequence diagrams across nodes)
+
+     For DP, augment the state-trace table with a 2D grid showing the DP array
+     populating cell by cell.
+     ============================================================================ -->

@@ -1,0 +1,301 @@
+<!--
+  EXAMPLE: Research-finding section template
+  ============================================
+  Adapts the 5-layer scaffold for presenting a RESEARCH FINDING — a
+  specific result, ablation, or discovery the tutorial wants to convince
+  the reader of.
+
+  Differences from concept sections:
+    Layer 1 — intuition: the FINDING in plain words (not concept intuition)
+    Layer 2 — geometry: a figure VISUALIZING the result (trajectory, heatmap)
+    Layer 3 — METHOD (replaces formula): how the experiment was run
+    Layer 4 — EVIDENCE TABLE (worked example variant): the raw results
+    Layer 5 — TAKEAWAY: why this finding generalizes, with limitations
+
+  Concrete demonstration: the "Stage 1 caching is load-bearing" finding,
+  shown via an Ablation A+ result.
+-->
+
+<section id="sN-finding" class="section">
+
+  <h2 id="sN-finding-h">N. Finding: Stage 1 caching is load-bearing under peak load</h2>
+
+  <p class="callout">
+    <strong>What you'll learn:</strong> a counterintuitive ablation result — skipping Stage 1 caching
+    LOOKS better at the Stage 3 endpoint (+6pp SLO, −25&nbsp;ms p99 in the CI benchmark) but is
+    CATASTROPHIC at the Stage 4 endpoint under production peak (−56pp SLO, +16pp error). The mechanism:
+    Stage 4's CDN can <em>refine</em> the load resilience Stage 1 installs but cannot <em>bootstrap</em>
+    it from nothing. The methodological point: <strong>evaluating a stage at the intermediate endpoint
+    can give the OPPOSITE answer to evaluating it at the shipped endpoint.</strong>
+  </p>
+
+  <!-- ============================================================
+       LAYER 1: THE FINDING in plain words
+       ============================================================ -->
+
+  <p>
+    The "obvious" way to evaluate whether Stage 1 caching was necessary is to skip it and see
+    how the rest of the pipeline performs. We did this. <strong>The result was so
+    surprising it changed how we evaluate stage ablations.</strong>
+  </p>
+
+  <p>
+    The skip-caching variant — going from the profiled baseline directly into Stage 3
+    DB indexing — <em>beat</em> the real <code>S1+S3</code> path by +6pp SLO compliance (and 25&nbsp;ms
+    lower p99) in the CI benchmark. With indexes in place and no single-flight lock, the uncached path
+    is genuinely faster at low concurrency. The naive conclusion: caching was wasting a node.
+  </p>
+
+  <p>
+    But the actual ship runs Stage 4 (CDN + pool tuning) under production peak. When we continued
+    BOTH paths through Stage 4 and re-measured at 5,000&nbsp;req/s, the situation flipped: the
+    skip-caching path lost its lead AND failed to hold up under load (a CDN offloads cacheable GETs but
+    a cache-miss storm still stampedes the origin). The shipped <code>S0+S3+S4</code> config lands
+    <strong>56pp below the real path on SLO compliance and 16pp worse on peak error</strong> — neither
+    recoverable without adding an origin cache back.
+  </p>
+
+  <!-- ============================================================
+       LAYER 2: GEOMETRIC visualization (trajectory plot)
+       ============================================================ -->
+
+  <figure role="figure" aria-labelledby="fig-ablation-cap">
+    <svg role="img" aria-labelledby="fig-ablation-title fig-ablation-desc"
+         viewBox="0 0 820 320"
+         style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+      <title id="fig-ablation-title">Stage 1 caching ablation: S0+S3+S4 vs S1+S3+S4 trajectory</title>
+      <desc id="fig-ablation-desc">Two trajectory lines tracked across three pipeline endpoints, measuring
+        SLO compliance (percent of requests served under 200 ms). The green line "S1+S3+S4 (real)" goes from
+        15% at the baseline, rises to 82% after Stage 3 (measured in the CI benchmark at moderate load), and
+        climbs to 96% after Stage 4 (measured under production peak). The orange line "S0+S3+S4 (skip caching)"
+        starts at the same 15%, jumps to 88% after Stage 3 (beating the real path by 6 points in the CI
+        benchmark), but craters to 40% after Stage 4 under production peak. The lines cross just after Stage 3
+        — the intermediate benchmark and the production peak give opposite answers.</desc>
+
+      <text x="20" y="28" font-family="system-ui,sans-serif" fill="#e6e8ee" font-size="13" font-weight="600">
+        Stage 1 caching ablation: where the paths cross
+      </text>
+
+      <!-- Axes -->
+      <line x1="80" y1="80" x2="80" y2="270" stroke="#2a2f42" stroke-width="1.5"/>
+      <line x1="80" y1="270" x2="780" y2="270" stroke="#2a2f42" stroke-width="1.5"/>
+      <text x="74" y="84" text-anchor="end" font-family="system-ui" fill="#8d94a8" font-size="11">100%</text>
+      <text x="74" y="179" text-anchor="end" font-family="system-ui" fill="#8d94a8" font-size="11">50%</text>
+      <text x="74" y="274" text-anchor="end" font-family="system-ui" fill="#8d94a8" font-size="11">0</text>
+      <text x="42" y="180" text-anchor="middle" font-family="system-ui" fill="#8d94a8" font-size="11" transform="rotate(-90, 42, 180)">SLO compliance (%)</text>
+
+      <!-- Stage labels on x-axis -->
+      <text x="180" y="290" text-anchor="middle" font-family="system-ui" fill="#8d94a8" font-size="12">Baseline</text>
+      <text x="380" y="290" text-anchor="middle" font-family="system-ui" fill="#8d94a8" font-size="12">After Stage 3 (CI bench)</text>
+      <text x="580" y="290" text-anchor="middle" font-family="system-ui" fill="#8d94a8" font-size="12">After Stage 4 (peak, SHIPPED)</text>
+
+      <!-- Real path: S1+S3+S4 (green line) -->
+      <!-- y scaled 0-100% over y=270-80 → 1.9 px/pp; y = 270 - value*1.9 -->
+      <!-- 15 → 242; 82 → 114; 96 → 88 -->
+      <polyline points="180,242 380,114 580,88"
+                stroke="#10b981" stroke-width="3" fill="none"/>
+      <circle cx="180" cy="242" r="6" fill="#10b981"/>
+      <circle cx="380" cy="114" r="6" fill="#10b981"/>
+      <circle cx="580" cy="88" r="6" fill="#10b981"/>
+      <text x="180" y="258" text-anchor="middle" font-family="ui-monospace" fill="#10b981" font-size="11" font-weight="600">15</text>
+      <text x="380" y="130" text-anchor="middle" font-family="ui-monospace" fill="#10b981" font-size="11" font-weight="600">82</text>
+      <text x="580" y="80" text-anchor="middle" font-family="ui-monospace" fill="#10b981" font-size="11" font-weight="600">96</text>
+
+      <!-- Ablation path: S0+S3+S4 (orange line) -->
+      <!-- 15 → 242; 88 → 103; 40 → 194 -->
+      <polyline points="180,242 380,103 580,194"
+                stroke="#fb923c" stroke-width="3" fill="none" stroke-dasharray="6 3"/>
+      <circle cx="180" cy="242" r="6" fill="#fb923c"/>
+      <circle cx="380" cy="103" r="6" fill="#fb923c"/>
+      <circle cx="580" cy="194" r="6" fill="#fb923c"/>
+      <text x="380" y="95" text-anchor="middle" font-family="ui-monospace" fill="#fb923c" font-size="11" font-weight="600">88</text>
+      <text x="580" y="210" text-anchor="middle" font-family="ui-monospace" fill="#fb923c" font-size="11" font-weight="600">40</text>
+
+      <!-- Crossing annotation -->
+      <line x1="410" y1="112" x2="410" y2="52" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="410" y="48" text-anchor="middle" font-family="system-ui" fill="#fbbf24" font-size="11" font-style="italic">paths cross here</text>
+
+      <!-- Legend -->
+      <g transform="translate(120, 38)">
+        <line x1="0" y1="6" x2="30" y2="6" stroke="#10b981" stroke-width="3"/>
+        <text x="36" y="10" font-family="system-ui" fill="#e6e8ee" font-size="11">S1+S3+S4 (real, SHIPPED)</text>
+
+        <line x1="240" y1="6" x2="270" y2="6" stroke="#fb923c" stroke-width="3" stroke-dasharray="6 3"/>
+        <text x="276" y="10" font-family="system-ui" fill="#e6e8ee" font-size="11">S0+S3+S4 (skip caching)</text>
+      </g>
+    </svg>
+    <figcaption id="fig-ablation-cap">
+      <strong>Figure N.</strong> Trajectory of two pipeline variants, measuring SLO compliance
+      (% of requests &lt; 200&nbsp;ms). In the Stage 3 CI benchmark the skip-caching path looks better
+      (88% vs 82%, orange above green). Re-measured under production peak after Stage 4, the picture flips:
+      green holds 96%, orange collapses to 40% — a <em>56-point gap at the shipped endpoint</em>. The lines
+      cross just after S3.
+    </figcaption>
+  </figure>
+
+  <!-- ============================================================
+       LAYER 3: METHOD (how the experiment was set up)
+       ============================================================ -->
+
+  <h3>How the experiment was run</h3>
+
+  <p>Two configs, two load profiles, four test runs:</p>
+
+  <ol>
+    <li><strong>Ablation A:</strong> applied Stage 3 DB indexing from the profiled baseline directly
+      (skipping Stage 1 caching), with the EXACT same indexes and query rewrites as the real Stage 3.
+      Saved as config <code>ablationA-index-nocache</code>.</li>
+    <li><strong>Eval at S3:</strong> ran the CI benchmark (500 req/s, moderate load) against both
+      <code>S1+S3</code> (real) and <code>S0+S3</code> (ablation A), measuring p99, p50, SLO compliance, and error rate.</li>
+    <li><strong>Ablation A+:</strong> continued ablation A through Stage 4 (CDN + connection-pool tuning),
+      with the EXACT same CDN and pool config as the real Stage 4. Saved as <code>ablationAplus-cdn-nocache</code>.</li>
+    <li><strong>Eval at S4:</strong> ran the production peak profile (5,000 req/s) against both
+      <code>S1+S3+S4</code> (real, shipped) and <code>S0+S3+S4</code> (ablation A+) on the same metric battery.</li>
+  </ol>
+
+  <p>Hardware identical across runs (same origin fleet, same 2M-object dataset, same traffic shape).
+  Total experiment: ~3 hours of load testing ≈ $12 in load-generator instances.</p>
+
+  <!-- ============================================================
+       LAYER 4: EVIDENCE TABLE
+       ============================================================ -->
+
+  <div class="callout worked-example">
+    <p class="callout-title"><strong>The raw results</strong></p>
+
+    <table>
+      <caption>Metric comparison: S1+S3 vs S0+S3 at the S3 endpoint (CI benchmark), S1+S3+S4 vs S0+S3+S4 at the S4 endpoint (production peak)</caption>
+      <thead>
+        <tr>
+          <th scope="col">Metric</th>
+          <th scope="col">S1+S3 (real)</th>
+          <th scope="col">S0+S3 (ablation A)</th>
+          <th scope="col">Δ at S3</th>
+          <th scope="col">S1+S3+S4 (real)</th>
+          <th scope="col">S0+S3+S4 (ablation A+)</th>
+          <th scope="col">Δ at S4</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SLO compliance (% &lt;200ms)</strong></td>
+          <td>82%</td>
+          <td>88%</td>
+          <td style="color: #10b981;">+6pp ← A wins</td>
+          <td><strong>96%</strong></td>
+          <td>40%</td>
+          <td style="color: #ef4444;">−56pp ← catastrophic</td>
+        </tr>
+        <tr>
+          <td><strong>p99 at eval load (ms)</strong></td>
+          <td>175</td>
+          <td>150</td>
+          <td style="color: #10b981;">−25ms ← A wins</td>
+          <td><strong>140</strong></td>
+          <td>620</td>
+          <td style="color: #ef4444;">+480ms ← A+ loses</td>
+        </tr>
+        <tr>
+          <td><strong>Error rate at peak</strong></td>
+          <td>3.0%</td>
+          <td>3.5%</td>
+          <td>+0.5pp</td>
+          <td><strong>0.9%</strong></td>
+          <td>17.0%</td>
+          <td style="color: #ef4444;">+16.1pp ← catastrophic</td>
+        </tr>
+        <tr>
+          <td><strong>p50, light load (ms)</strong></td>
+          <td>68</td>
+          <td>60</td>
+          <td>−8ms</td>
+          <td>55</td>
+          <td>52</td>
+          <td style="color: #10b981;">−3ms ← only edge for A+</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Reading the table.</strong> At the S3 endpoint (CI benchmark, moderate load), A WINS on SLO
+    compliance and p99 — with indexes in place and no single-flight lock, the uncached path is genuinely
+    faster at low concurrency. Re-measured at the S4 endpoint under production peak, A+ LOSES catastrophically:
+    SLO compliance craters to 40% and peak error hits 17%, because a CDN caches responses but a cache-miss
+    storm still stampedes the unprotected origin. The only column A+ "wins" at S4 is p50 under light load
+    (no lock overhead) — irrelevant given the peak collapse.</p>
+
+    <p><strong>The arithmetic of the comparison.</strong> In the CI benchmark, A wins +6pp SLO and −25ms p99
+    → looks like caching wastes a node. Under production peak, A+ loses 56pp SLO and +480ms p99
+    → catastrophic. The shipping endpoint (production peak) matters far more than the intermediate one.</p>
+  </div>
+
+  <!-- ============================================================
+       LAYER 5: TAKEAWAY + limitations (the most important part)
+       ============================================================ -->
+
+  <p><strong>Takeaway.</strong> Stage 1 caching is <strong>load-bearing for the shipped system</strong>
+  even though it looks wasteful in the CI benchmark. The mechanism is that Stage 4's CDN <em>refines</em>
+  the resilience Stage 1 imprints (edge offload on top of a protected origin) but cannot <em>bootstrap</em>
+  it from nothing — a CDN in front of an unprotected origin still lets cache-miss storms through (40% SLO
+  at peak is not recoverable by adding edge caching alone). Continuing the no-cache path through Stage 4
+  spends its small p50 edge and never recovers peak resilience.</p>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>Methodological lesson worth publishing</strong></p>
+    <p>For staged optimization where a later stage's payoff only appears under a load the intermediate
+    benchmark doesn't apply, <strong>evaluating a stage at the intermediate endpoint (the CI benchmark) can
+    give the OPPOSITE answer to evaluating it at the shipped endpoint (production peak).</strong> Re-run the
+    full pipeline under production-representative load before concluding a stage is unnecessary.</p>
+  </div>
+
+  <h3>Limitations of this finding</h3>
+
+  <ul>
+    <li><strong>Scale.</strong> Validated at 5,000 req/s peak. Whether the same flip occurs at 50k+ is
+      open — a much larger origin fleet might absorb miss storms without Stage 1's protection.</li>
+    <li><strong>Cache design.</strong> Specific to a read-through cache with single-flight. A write-through
+      or per-edge design might not show the same bootstrapping limitation.</li>
+    <li><strong>One trial each.</strong> Both ablation A and A+ were single runs with one traffic shape; we
+      didn't repeat with different burst patterns. The 56pp SLO gap at S4 is large enough that noise probably
+      doesn't flip the sign, but we haven't proven it.</li>
+    <li><strong>Stage 1 scope not separately ablated.</strong> Our cache covers all five read buckets. We
+      don't know if caching only the top two (product + category ≈ 70% of reads) would preserve most of the
+      resilience at lower memory. Worth a follow-up ablation B (not run).</li>
+  </ul>
+
+  <p>Despite these limitations, the finding is strong enough that we ship <code>S1+S3+S4</code> and
+  recommend others do too — at least for read-heavy APIs under bursty peak load.</p>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     Research-finding section pattern:
+
+     Layer 1: THE FINDING in plain words. Not concept intuition — the actual result.
+     Layer 2: a TRAJECTORY or HEATMAP visualizing the result. The figure must
+              show the surprise (here: the lines crossing).
+     Layer 3: METHOD section — how the experiment was set up. Reproducibility.
+     Layer 4: EVIDENCE TABLE in a worked-example callout. Raw results.
+     Layer 5: TAKEAWAY + LIMITATIONS. The methodological lesson + honest scope.
+
+     What makes research findings persuasive:
+       - SPECIFIC numbers (not "roughly +6pp" → "+6.0pp")
+       - The COUNTERINTUITIVE element surfaced visually (lines crossing)
+       - The MECHANISM explained (why Stage 4 can refine but not bootstrap)
+       - The METHODOLOGICAL lesson generalized
+       - The LIMITATIONS honestly enumerated
+
+     Patterns that fit:
+       - Ablation studies
+       - "We tried X, here's what happened" findings
+       - Comparison of competing approaches
+       - Scaling experiments (effect of N)
+
+     Patterns that DON'T fit:
+       - Conceptual explanations (use section-complete.html)
+       - System / architecture descriptions (use section-architecture.html)
+       - Step-by-step procedures (use section-recipe.html)
+     ============================================================================ -->

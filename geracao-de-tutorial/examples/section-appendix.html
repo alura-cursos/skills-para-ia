@@ -1,0 +1,222 @@
+<!--
+  EXAMPLE: Appendix section (closing of any tutorial)
+  =====================================================
+  The closing section's job:
+    - Consolidate bear traps from across the document into ONE searchable list
+    - Provide a glossary of all defined terms
+    - List references (papers, repos, specs) properly
+    - Show file structure / source code map
+    - Acknowledge limitations and open questions
+    - Provide contact / next-steps info
+
+  Like the intro, the 5-layer scaffold doesn't apply — appendices reference,
+  not teach.
+-->
+
+<section id="sN-appendix" class="section">
+
+  <h2 id="sN-appendix-h">Appendix</h2>
+
+  <!-- ============================================================
+       BEAR TRAPS — consolidated index from across the document
+       ============================================================ -->
+
+  <h3 id="appendix-bear-traps">A. Bear traps (the 12 things that ate hours)</h3>
+
+  <p>If you only read one appendix subsection, make it this one. Each entry includes
+  the symptom, the root cause, and the fix.</p>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>A.1 Cache stampede at TTL expiry</strong></p>
+    <p><strong>Symptom.</strong> Every ~300&nbsp;s, p99 spikes to ~900&nbsp;ms for a few seconds — a latency sawtooth synced to the cache TTL.</p>
+    <p><strong>Cause.</strong> When a hot key expires, all concurrent requests miss simultaneously and hit the database together → DB CPU pegs → the request queue backs up.</p>
+    <p><strong>Fix.</strong> Turn on <code>single-flight</code> (one request recomputes; the rest await it) plus <code>stale-while-revalidate</code>. See §6.</p>
+  </div>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>A.2 Silent cache bypass — key collision</strong></p>
+    <p><strong>Symptom.</strong> <code>hit_rate=0</code>, origin QPS jumps to 100% of a namespace's traffic, p99 climbs — with no error logged.</p>
+    <p><strong>Cause.</strong> A query-normalization change made the same request compute a NEW cache key every time; every lookup missed. Every key unique; hit rate 0 everywhere.</p>
+    <p><strong>Fix.</strong> Pin key derivation to a versioned <code>cacheKey(normalize(input))</code> and bump the namespace suffix (<code>:v4</code>) on any change. See §6.4.</p>
+  </div>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>A.3 Connection-pool exhaustion deadlock</strong></p>
+    <p><strong>Symptom.</strong> Under load, latency climbs, then requests hang and time out in waves — while DB CPU is <em>idle</em> (it's waiting, not working).</p>
+    <p><strong>Cause.</strong> The pool is smaller than the number of concurrent slow queries; new requests block on a connection that never frees. With no acquire timeout, the wait is unbounded.</p>
+    <p><strong>Fix.</strong> Set a pool acquire timeout (fail fast, shed load) + size the pool to ~(cores × 2) and give read replicas a separate pool. See §9.2.</p>
+  </div>
+
+  <p style="color: var(--muted); font-style: italic;">[...truncated; the actual appendix lists all 12 traps in this format.]</p>
+
+  <!-- ============================================================
+       GLOSSARY — every term defined in one place
+       ============================================================ -->
+
+  <h3 id="glossary">B. Glossary</h3>
+
+  <dl class="glossary">
+    <dt id="g-hitrate">Cache hit rate</dt>
+    <dd>Fraction of reads served from cache without touching the origin.
+        Formula: hits / (hits + misses). See §6.</dd>
+
+    <dt id="g-percentile">p50 / p99</dt>
+    <dd>Median and 99th-percentile latency. p99 is the "tail" a fraction of users feel;
+        it dominates perceived slowness under load. See §3.</dd>
+
+    <dt id="g-single-flight">Single-flight</dt>
+    <dd>Request coalescing: when several requests miss the same key at once, ONE recomputes
+        the value and the rest await its result instead of all hitting the origin. See §6.2.</dd>
+
+    <dt id="g-stampede">Stampede (thundering herd)</dt>
+    <dd>Many concurrent requests missing the same just-expired key and hitting the origin
+        together, spiking load. The problem single-flight solves. See §6.2.</dd>
+
+    <dt id="g-slo">SLO</dt>
+    <dd>Service Level Objective — the target you hold yourself to.
+        Here: "99% of requests complete under 200&nbsp;ms at peak." See §3.</dd>
+
+    <dt id="g-swr">Stale-while-revalidate</dt>
+    <dd>Serve the expired cached value immediately while refreshing it asynchronously, so
+        no request waits on the recompute. Trades a little staleness for zero refresh stalls. See §6.2.</dd>
+
+    <dt id="g-pool">Connection pool</dt>
+    <dd>A fixed set of reusable database connections shared across requests. Too few → queueing;
+        too many → the DB itself is overloaded. See §9.2.</dd>
+
+    <dt id="g-nplus1">N+1 query</dt>
+    <dd>Fetching a list, then issuing one query per item instead of a single batched query.
+        A classic hidden latency source on the miss path. See §8.2.</dd>
+
+    <dt id="g-negcache">Negative caching</dt>
+    <dd>Caching "not found" (404) responses briefly so repeated requests for a missing key
+        don't keep hitting the origin. See §6.6.</dd>
+
+    <dt id="g-cdn">CDN</dt>
+    <dd>Content Delivery Network — edge servers that cache cacheable responses close to users,
+        offloading the origin. Refines resilience but can't replace an origin cache. See §9.</dd>
+  </dl>
+
+  <!-- ============================================================
+       REFERENCES — papers, specs, tools
+       ============================================================ -->
+
+  <h3 id="references">C. References</h3>
+
+  <h4>C.1 Papers and articles</h4>
+  <ul>
+    <li>Dean, J. &amp; Barroso, L. A. (2013). <em>The Tail at Scale.</em> Communications of the ACM 56(2).
+      <a href="https://dl.acm.org/doi/10.1145/2408776.2408794">ACM</a> (why p99 dominates under fan-out).</li>
+    <li>Nishtala et al. (2013). <em>Scaling Memcache at Facebook.</em> USENIX NSDI.
+      <a href="https://www.usenix.org/conference/nsdi13/technical-sessions/presentation/nishtala">USENIX</a>
+      (leases / single-flight against stampedes).</li>
+  </ul>
+
+  <h4>C.2 Specifications and docs</h4>
+  <ul>
+    <li>HTTP Caching — <a href="https://www.rfc-editor.org/rfc/rfc9111">RFC 9111</a>
+      (freshness, <code>stale-while-revalidate</code>).</li>
+    <li>Redis documentation:
+      <a href="https://redis.io/docs/latest/">redis.io/docs</a>.</li>
+    <li>PostgreSQL — <em>Building Indexes Concurrently</em>:
+      <a href="https://www.postgresql.org/docs/current/sql-createindex.html">postgresql.org</a>.</li>
+  </ul>
+
+  <h4>C.3 Tools</h4>
+  <ul>
+    <li>k6 (load testing):
+      <a href="https://k6.io/docs/">k6.io/docs</a>.</li>
+    <li>PgBouncer (connection pooling):
+      <a href="https://www.pgbouncer.org/">pgbouncer.org</a>.</li>
+  </ul>
+
+  <!-- ============================================================
+       FILE / SOURCE MAP
+       ============================================================ -->
+
+  <h3 id="file-map">D. Source code map</h3>
+
+  <details>
+    <summary style="cursor: pointer; color: var(--muted);">Show full file tree</summary>
+<pre><code>service-root/
+├── cache/
+│   ├── readthrough.go        ← read-through cache + single-flight (§6)
+│   ├── keys.go               ← versioned cache-key derivation (§6.4)
+│   └── negcache.go           ← negative caching (§6.6)
+├── db/
+│   ├── migrations/           ← online CREATE INDEX CONCURRENTLY (§8)
+│   └── queries.go            ← batch-loaded queries, fixed N+1 (§8.2)
+├── loadtest/
+│   ├── ci_bench.js           ← 500 req/s CI benchmark (§10)
+│   └── peak_profile.js       ← 5k req/s production peak profile (§10)
+├── cdn/
+│   └── edge_rules.yaml       ← CDN cache rules + TTLs (§9)
+└── config/
+    └── pool.yaml             ← connection-pool sizing (§9.2)  ← SHIPPED</code></pre>
+  </details>
+
+  <!-- ============================================================
+       LIMITATIONS — honest about what was NOT tested
+       ============================================================ -->
+
+  <h3 id="limitations">E. Limitations and open questions</h3>
+
+  <p>Honest accounting of what this recipe does <strong>not</strong> address:</p>
+
+  <ul>
+    <li><strong>Scale.</strong> Validated at 5,000 req/s peak. Behavior at 50k+ (multiple origin shards,
+      cross-shard cache coherence) is untested.</li>
+    <li><strong>Read-heavy assumption.</strong> The recipe targets read-heavy APIs. Write-heavy workloads
+      need different tactics (write-through, CQRS, event sourcing) — caching alone won't help.</li>
+    <li><strong>Single region.</strong> No data on multi-region cache coherence or geo-routing; the CDN
+      section assumes one origin region.</li>
+    <li><strong>Consistency.</strong> The 300&nbsp;s catalog TTL means up to 5 minutes of staleness on
+      non-inventory fields. Not suitable where reads must be strongly consistent.</li>
+    <li><strong>Runtime.</strong> Measured on a Go service; GC-heavy or single-threaded runtimes may shift
+      the p50/p99 numbers materially. Re-measure on your stack.</li>
+  </ul>
+
+  <!-- ============================================================
+       CONTACT / FEEDBACK
+       ============================================================ -->
+
+  <h3 id="contact">F. Contact and feedback</h3>
+
+  <p>Bugs / corrections: file an issue at <a href="#">[REPO URL]</a> or email
+  <a href="#">[CONTACT EMAIL]</a>.</p>
+
+  <p>Citations: please cite as <code>[BIBTEX REFERENCE]</code>.</p>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     Appendix structure:
+
+     1. BEAR TRAPS FIRST. Single most-searched section. Don't bury it.
+
+     2. GLOSSARY as a <dl class="glossary"> with id="g-X" anchors.
+        Every <a class="gloss" href="#g-X"> in prose must resolve here.
+
+     3. REFERENCES in 3 subsections: papers, specs, tools.
+        Use actual hyperlinks. Include licenses for datasets you used.
+
+     4. SOURCE MAP in a <details> collapsible.
+        File trees are long; not everyone needs them. Collapse by default.
+
+     5. LIMITATIONS section is non-negotiable for credibility.
+        Honest tutorials list what they DIDN'T test. Builds trust.
+
+     6. CONTACT / CITATION info at the end.
+        Reader who got to the appendix is engaged enough to want to give feedback.
+
+     WHAT TO AVOID in appendices:
+       - Padded "acknowledgments" sections (keep these short or skip)
+       - Repeating content from the main body
+       - Adding NEW concepts in the appendix (move them to a real section)
+       - Forgetting to link from "see appendix A" in the main text
+
+     COMPLEMENTARY to: section-intro.html (opening structure).
+     ============================================================================ -->

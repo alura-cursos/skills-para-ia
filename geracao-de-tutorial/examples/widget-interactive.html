@@ -1,0 +1,238 @@
+<!--
+  EXAMPLE: Interactive widget pattern
+  ====================================
+  Vanilla JS, no dependencies. Demonstrates the canonical structure for an
+  interactive widget that lets the reader manipulate a parameter and see the
+  consequences in real time.
+
+  Concrete example: "Law of large numbers" — slide N from 1 to 1000 and watch
+  the sample mean of N coin flips approach 0.5. Includes:
+    - A range slider
+    - A reactive numeric label
+    - An SVG chart with histogram bars
+    - A text output area summarizing the current state
+    - A "Resample" button (regenerates the random draws)
+
+  Reusable pattern:
+    - State (N, seed) lives in closure variables
+    - render() is the single update function: reads state → updates DOM
+    - Event handlers mutate state and call render()
+    - aria-label on the SVG updates reactively for screen-reader users
+    - All math is computed in JS, not pre-baked into the SVG
+-->
+
+<div class="widget" id="widget-lln">
+  <h4 style="margin: 0 0 12px;">Law of large numbers — explore</h4>
+  <p style="color: var(--muted); margin: 0 0 16px; font-size: 13px;">
+    Flip a fair coin <code>N</code> times. Each flip is 0 or 1.
+    The <em>sample mean</em> is the average of those <code>N</code> flips.
+    As <code>N</code> grows, the sample mean should converge to the true mean (0.5).
+  </p>
+
+  <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+    <label style="display: flex; align-items: center; gap: 12px;">
+      <span>N = <span id="lln-n-val" style="color: var(--accent); font-weight: 600; font-family: monospace; min-width: 4ch; display: inline-block;">10</span></span>
+      <input type="range" id="lln-n-slider" min="1" max="1000" value="10" step="1" style="width: 200px;">
+    </label>
+    <button id="lln-resample" type="button" style="background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-family: inherit;">Resample</button>
+  </div>
+
+  <svg id="lln-svg"
+       viewBox="0 0 760 240"
+       style="display: block; width: 100%; height: auto; background: var(--panel); border-radius: 8px;"
+       role="img"
+       aria-label="Histogram of N coin-flip outcomes with sample mean indicator">
+
+    <!-- y-axis -->
+    <line x1="60" y1="40" x2="60" y2="200" stroke="var(--line)" stroke-width="1"/>
+    <text x="55" y="44" text-anchor="end" fill="var(--muted)" font-size="10" font-family="ui-monospace,monospace">N</text>
+    <text x="55" y="204" text-anchor="end" fill="var(--muted)" font-size="10" font-family="ui-monospace,monospace">0</text>
+
+    <!-- x-axis -->
+    <line x1="60" y1="200" x2="720" y2="200" stroke="var(--line)" stroke-width="1"/>
+    <text x="200" y="220" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="ui-monospace,monospace">tails (0)</text>
+    <text x="580" y="220" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="ui-monospace,monospace">heads (1)</text>
+
+    <!-- Two bars: count of zeros and count of ones -->
+    <rect id="lln-bar-zero" x="100" y="100" width="200" height="100" fill="var(--accent)" opacity="0.85" rx="3"/>
+    <rect id="lln-bar-one"  x="480" y="100" width="200" height="100" fill="var(--s3)" opacity="0.85" rx="3"/>
+
+    <!-- Count labels above bars -->
+    <text id="lln-count-zero" x="200" y="92" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600" font-family="ui-monospace,monospace">5</text>
+    <text id="lln-count-one"  x="580" y="92" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600" font-family="ui-monospace,monospace">5</text>
+
+    <!-- True mean reference line at x = 390 (midpoint between the two bar centers) -->
+    <line x1="390" y1="40" x2="390" y2="200" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="390" y="36" text-anchor="middle" fill="var(--warn)" font-size="11" font-style="italic">true mean = 0.5</text>
+
+    <!-- Sample mean indicator: a small dot at the current sample mean position -->
+    <circle id="lln-sample-mean-dot" cx="390" cy="220" r="5" fill="var(--s2)" stroke="var(--bg)" stroke-width="1"/>
+    <text id="lln-sample-mean-label" x="400" y="225" fill="var(--s2)" font-size="11" font-family="ui-monospace,monospace">x̄ = 0.500</text>
+  </svg>
+
+  <pre class="widget-output" id="lln-output" style="margin-top: 12px; padding: 12px; background: var(--code); border-radius: 4px; font-size: 12px; line-height: 1.5; color: var(--text); white-space: pre-wrap; min-height: 64px;">computing…</pre>
+
+  <script>
+  (function() {
+    // ============================================================
+    // State (all closure-scoped — no globals)
+    // ============================================================
+    var N = 10;
+    var seed = 42;
+    var rng = mulberry32(seed);
+
+    // ============================================================
+    // DOM refs
+    // ============================================================
+    var slider   = document.getElementById('lln-n-slider');
+    var nVal     = document.getElementById('lln-n-val');
+    var resample = document.getElementById('lln-resample');
+    var barZero  = document.getElementById('lln-bar-zero');
+    var barOne   = document.getElementById('lln-bar-one');
+    var countZero= document.getElementById('lln-count-zero');
+    var countOne = document.getElementById('lln-count-one');
+    var meanDot  = document.getElementById('lln-sample-mean-dot');
+    var meanLbl  = document.getElementById('lln-sample-mean-label');
+    var output   = document.getElementById('lln-output');
+    var svg      = document.getElementById('lln-svg');
+
+    // ============================================================
+    // Seeded RNG (mulberry32) — deterministic, fast, good enough
+    // ============================================================
+    function mulberry32(a) {
+      return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = a;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // ============================================================
+    // Render: read state → compute → update DOM
+    // ============================================================
+    function render() {
+      nVal.textContent = N;
+
+      // Generate N coin flips with the current RNG
+      var zeros = 0, ones = 0;
+      var r = mulberry32(seed);
+      for (var i = 0; i < N; i++) {
+        if (r() < 0.5) zeros++; else ones++;
+      }
+      var sampleMean = ones / N;
+
+      // Update bars: heights proportional to count, max bar = 160 px
+      var maxCount = Math.max(zeros, ones);
+      var h0 = (zeros / maxCount) * 160;
+      var h1 = (ones / maxCount) * 160;
+      barZero.setAttribute('y',      200 - h0);
+      barZero.setAttribute('height', h0);
+      barOne.setAttribute('y',       200 - h1);
+      barOne.setAttribute('height',  h1);
+
+      // Update count labels (positioned above bars)
+      countZero.textContent = zeros;
+      countZero.setAttribute('y', 200 - h0 - 8);
+      countOne.textContent  = ones;
+      countOne.setAttribute('y',  200 - h1 - 8);
+
+      // Update sample mean indicator: x position = 100 + sampleMean * 580
+      // (where x=100 corresponds to the left edge of the bar area, x=680 the right)
+      var meanX = 100 + sampleMean * 580;
+      meanDot.setAttribute('cx', meanX);
+      meanLbl.setAttribute('x',  meanX + 10);
+      meanLbl.textContent = 'x̄ = ' + sampleMean.toFixed(3);
+
+      // Color the sample-mean indicator by distance from true mean
+      var diff = Math.abs(sampleMean - 0.5);
+      var color = diff < 0.05 ? '#10b981' : diff < 0.15 ? '#fbbf24' : '#ef4444';
+      meanDot.setAttribute('fill', color);
+      meanLbl.setAttribute('fill', color);
+
+      // Update SVG aria-label (CRITICAL for screen-reader users)
+      svg.setAttribute('aria-label',
+        'Histogram of ' + N + ' coin-flip outcomes. ' +
+        zeros + ' tails, ' + ones + ' heads. ' +
+        'Sample mean ' + sampleMean.toFixed(3) + ', true mean 0.5, distance ' + diff.toFixed(3) + '.');
+
+      // Text output: summary + interpretation
+      var lines = [];
+      lines.push('N = ' + N + ' coin flips (seed = ' + seed + ')');
+      lines.push('zeros: ' + zeros + '    ones: ' + ones);
+      lines.push('sample mean: ' + sampleMean.toFixed(4));
+      lines.push('distance from true mean (0.5): ' + diff.toFixed(4));
+      lines.push('');
+      if (N < 20) {
+        lines.push('→ small N: sample mean can be far from 0.5. With this seed, distance is ' + diff.toFixed(3) + '.');
+      } else if (N < 100) {
+        lines.push('→ moderate N: sample mean is getting closer to 0.5 (typical distance ~0.05-0.10).');
+      } else {
+        lines.push('→ large N: sample mean is very close to 0.5 (typical distance < 0.05).');
+      }
+      lines.push('');
+      lines.push('Click "Resample" to draw a new random sequence with a different seed.');
+      output.textContent = lines.join('\n');
+    }
+
+    // ============================================================
+    // Event handlers
+    // ============================================================
+    slider.addEventListener('input', function() {
+      N = parseInt(slider.value, 10);
+      render();
+    });
+
+    resample.addEventListener('click', function() {
+      seed = Math.floor(Math.random() * 1e6);
+      render();
+    });
+
+    // ============================================================
+    // Initial render
+    // ============================================================
+    render();
+  })();
+  </script>
+</div>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+
+     The interactive widget pattern in 6 rules:
+
+     1. SELF-CONTAINED. One <div class="widget" id="widget-X">, one <script>
+        with IIFE for scoping. No dependencies, no globals.
+
+     2. STATE IN CLOSURES. Everything that varies (N, seed, ...) is a closure
+        variable. NEVER attach state to window or DOM elements.
+
+     3. SINGLE render() FUNCTION. Reads state, computes, updates DOM. All
+        update logic flows through this one function. Event handlers mutate
+        state and call render().
+
+     4. ARIA-LABEL UPDATES REACTIVELY. The SVG's aria-label must change as
+        state changes — otherwise screen-reader users get a frozen snapshot.
+
+     5. PROVIDE BOTH CHART AND TEXT OUTPUT. Some readers prefer the histogram;
+        others prefer the numbers. A <pre> readout always pays off.
+
+     6. ALL MATH HAPPENS IN JS. Don't pre-render numbers in the SVG and try to
+        swap them — compute everything every render(). Bear trap B.13: no
+        hand-tuned magic numbers; every value comes from the simulation.
+
+     A widget should respect three meta-properties:
+       - DETERMINISTIC GIVEN STATE. Same N + same seed → same chart, every time.
+       - REVERSIBLE. Moving the slider back returns to the previous state.
+       - CHEAP TO RE-RENDER. Re-running the whole simulation per render() is
+         fine for N up to ~10,000. Beyond that, consider caching the draws.
+
+     Common widget shapes (steal these):
+       - Parameter slider + chart      (this example)
+       - Mode toggle + side-by-side chart  (binary vs partial credit)
+       - Multi-slider + numerical output    (composite reward weights)
+       - Animation play/pause/step controls (state machine visualizations)
+     ============================================================================ -->

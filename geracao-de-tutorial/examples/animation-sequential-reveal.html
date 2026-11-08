@@ -1,0 +1,226 @@
+<!--
+  EXAMPLE: Sequential reveal animation pattern
+  =============================================
+  Elements appear ONE AT A TIME and STAY VISIBLE. Used for "building up" a
+  composite — e.g., stages of a pipeline appearing, components of a system
+  assembling, points of an algorithm being added.
+
+  Concrete example: a CI/CD pipeline materializing one stage
+  at a time, with arrows appearing between stages as each new one arrives.
+
+  Contrast with:
+    - 3-phase animation (states swap; previous state DISAPPEARS as next appears)
+    - Sweeper (continuous parameter; nothing "appears" — values just change)
+
+  Use when:
+    - Teaching a sequence (steps, stages, layers)
+    - The cumulative composition matters (the final state is the point)
+    - The reader needs to see the build-up, not just the end state
+-->
+
+<figure role="figure" aria-labelledby="anim-pipeline-cap">
+<svg role="img"
+     aria-labelledby="anim-pipeline-title anim-pipeline-desc"
+     viewBox="0 0 820 240"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="anim-pipeline-title">CI/CD pipeline: stages appear sequentially</title>
+  <desc id="anim-pipeline-desc">An animation showing a CI/CD pipeline materializing one stage at a time.
+    At t=0 only the input (Commit) is visible. At t=1s Stage 1 (Build) appears with an arrow connecting the commit.
+    At t=2.4s Stage 2 (Test) appears with arrow from Stage 1. At t=3.8s Stage 3 (Deploy preview) appears. At t=5.3s
+    the Production release appears. All elements remain visible for the remainder of the 8s loop, then everything
+    resets.</desc>
+
+  <style>
+    #anim-pipeline-fig {
+      --bg: #0f1117;     --panel-2: #1c2030;   --text: #e6e8ee;   --muted: #8d94a8;
+      --line: #2a2f42;   --s1: #3b82f6;        --s2: #fbbf24;
+      --s3: #10b981;     --s4: #8b5cf6;        --accent: #7aa2f7;
+    }
+    #anim-pipeline-fig .prose { font-family: system-ui, sans-serif; fill: var(--text); }
+    #anim-pipeline-fig .muted { font-family: system-ui, sans-serif; fill: var(--muted); }
+    #anim-pipeline-fig .mono  { font-family: ui-monospace, monospace; fill: var(--text); }
+    #anim-pipeline-fig .title { font-family: system-ui, sans-serif; fill: var(--text); font-weight: 600; }
+
+    /* Reveal keyframes — each stage appears at its trigger time, stays visible
+       through the rest of the cycle, then resets at 100%. 8-second loop. */
+
+    /* Input visible 0-100% (always shown) */
+
+    /* Stage 1 appears at 12% (t=1s) */
+    @keyframes reveal-1 {
+      0%, 12%   { opacity: 0; transform: translateX(-10px); }
+      18%, 95%  { opacity: 1; transform: translateX(0); }
+      100%      { opacity: 0; transform: translateX(-10px); }
+    }
+    /* Stage 2 at 30% (t=2.4s) */
+    @keyframes reveal-2 {
+      0%, 30%   { opacity: 0; transform: translateX(-10px); }
+      36%, 95%  { opacity: 1; transform: translateX(0); }
+      100%      { opacity: 0; transform: translateX(-10px); }
+    }
+    /* Stage 3 at 48% (t=3.8s) */
+    @keyframes reveal-3 {
+      0%, 48%   { opacity: 0; transform: translateX(-10px); }
+      54%, 95%  { opacity: 1; transform: translateX(0); }
+      100%      { opacity: 0; transform: translateX(-10px); }
+    }
+    /* Stage 4 at 66% (t=5.3s) */
+    @keyframes reveal-4 {
+      0%, 66%   { opacity: 0; transform: translateX(-10px); }
+      72%, 95%  { opacity: 1; transform: translateX(0); }
+      100%      { opacity: 0; transform: translateX(-10px); }
+    }
+    /* Output at 80% */
+    @keyframes reveal-out {
+      0%, 80%   { opacity: 0; }
+      86%, 95%  { opacity: 1; }
+      100%      { opacity: 0; }
+    }
+
+    #anim-pipeline-fig .stage-1 { animation: reveal-1 8s ease-out infinite; opacity: 0; transform-box: fill-box; }
+    #anim-pipeline-fig .stage-2 { animation: reveal-2 8s ease-out infinite; opacity: 0; transform-box: fill-box; }
+    #anim-pipeline-fig .stage-3 { animation: reveal-3 8s ease-out infinite; opacity: 0; transform-box: fill-box; }
+    #anim-pipeline-fig .stage-4 { animation: reveal-4 8s ease-out infinite; opacity: 0; transform-box: fill-box; }
+    #anim-pipeline-fig .stage-out { animation: reveal-out 8s ease-out infinite; opacity: 0; }
+  </style>
+
+  <g id="anim-pipeline-fig">
+
+    <text x="20" y="28" class="title" font-size="13">CI/CD pipeline — sequential assembly</text>
+
+    <!-- Arrow marker -->
+    <defs>
+      <marker id="arr-pipe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+      </marker>
+    </defs>
+
+    <!-- Input (always visible) -->
+    <g>
+      <rect x="20" y="80" width="120" height="60" rx="6"
+            fill="var(--panel-2)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="80" y="110" text-anchor="middle" class="title" font-size="13">Commit</text>
+      <text x="80" y="128" text-anchor="middle" class="muted" font-size="11">e.g., push to main</text>
+    </g>
+
+    <!-- Arrow 1 (paired with Stage 1) -->
+    <g class="stage-1">
+      <line x1="140" y1="110" x2="180" y2="110"
+            stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-pipe)"/>
+    </g>
+
+    <!-- Stage 1: Build -->
+    <g class="stage-1">
+      <rect x="180" y="80" width="120" height="60" rx="6"
+            fill="var(--panel-2)" stroke="var(--s1)" stroke-width="2"/>
+      <text x="240" y="105" text-anchor="middle" class="title" font-size="13" fill="var(--s1)">Stage 1</text>
+      <text x="240" y="123" text-anchor="middle" class="mono" font-size="12">Build</text>
+      <text x="240" y="160" text-anchor="middle" class="muted" font-size="10">~2 min</text>
+    </g>
+
+    <!-- Arrow 2 -->
+    <g class="stage-2">
+      <line x1="300" y1="110" x2="340" y2="110"
+            stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-pipe)"/>
+    </g>
+
+    <!-- Stage 2: Test -->
+    <g class="stage-2">
+      <rect x="340" y="80" width="120" height="60" rx="6"
+            fill="var(--panel-2)" stroke="var(--s3)" stroke-width="2"/>
+      <text x="400" y="105" text-anchor="middle" class="title" font-size="13" fill="var(--s3)">Stage 2</text>
+      <text x="400" y="123" text-anchor="middle" class="mono" font-size="12">Test</text>
+      <text x="400" y="160" text-anchor="middle" class="muted" font-size="10">unit + integration</text>
+    </g>
+
+    <!-- Arrow 3 -->
+    <g class="stage-3">
+      <line x1="460" y1="110" x2="500" y2="110"
+            stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-pipe)"/>
+    </g>
+
+    <!-- Stage 3: Deploy preview -->
+    <g class="stage-3">
+      <rect x="500" y="80" width="120" height="60" rx="6"
+            fill="var(--panel-2)" stroke="var(--s4)" stroke-width="2"/>
+      <text x="560" y="105" text-anchor="middle" class="title" font-size="13" fill="var(--s4)">Stage 3</text>
+      <text x="560" y="123" text-anchor="middle" class="mono" font-size="12">Deploy preview</text>
+      <text x="560" y="160" text-anchor="middle" class="muted" font-size="10">ephemeral env</text>
+    </g>
+
+    <!-- Arrow 4 -->
+    <g class="stage-4">
+      <line x1="620" y1="110" x2="660" y2="110"
+            stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-pipe)"/>
+    </g>
+
+    <!-- Output -->
+    <g class="stage-4">
+      <rect x="660" y="80" width="140" height="60" rx="6"
+            fill="var(--panel-2)" stroke="var(--s3)" stroke-width="3"/>
+      <text x="730" y="105" text-anchor="middle" class="title" font-size="13" fill="var(--s3)">Production release</text>
+      <text x="730" y="123" text-anchor="middle" class="mono" font-size="12">tag v1.4.2</text>
+    </g>
+
+    <!-- Bottom message that appears with the output -->
+    <g class="stage-out">
+      <text x="400" y="208" text-anchor="middle" class="muted" font-style="italic">
+        Each stage gates the next — a failed build or test stops the release before it reaches production.
+      </text>
+    </g>
+
+  </g>
+</svg>
+
+<figcaption id="anim-pipeline-cap">
+  <strong>Animation:</strong> stages of a CI/CD pipeline appear one at a time with their
+  connecting arrows. After all the steps have materialized, the production release appears.
+  This <em>sequential reveal</em> pattern is right when the reader needs to see the cumulative
+  build-up — the final state is the point, but the order matters.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The sequential reveal pattern in 4 rules:
+
+     1. THE BASE STATE IS ALWAYS VISIBLE.
+        Whatever the build-up starts from (here: the commit) doesn't fade.
+        The reader needs an anchor that's always present.
+
+     2. EACH ELEMENT APPEARS AT ITS TRIGGER TIME AND STAYS VISIBLE.
+        The opacity keyframe pattern: { 0% to trigger-1%: opacity 0; trigger to 95%: opacity 1; 100%: 0 (reset) }
+        ALWAYS reset at 100% so the loop is clean.
+
+     3. PAIR EACH NEW ELEMENT WITH ITS CONNECTOR.
+        When Stage 2 appears, the arrow FROM Stage 1 TO Stage 2 also appears at the same time.
+        Reveal both with the same .stage-N class.
+
+     4. ANIMATE WITH A SMALL TRANSLATEX, NOT JUST OPACITY.
+        translate(-10px → 0) gives a subtle "slide in" feel that's much more polished than
+        pure fade. Pair with ease-out for "settling" motion.
+
+     Timing (8-second cycle, 5 reveals + 1 takeaway):
+       0-12%   wait
+       12-18%  Stage 1 fades in
+       18-30%  hold
+       30-36%  Stage 2 fades in
+       36-48%  hold
+       48-54%  Stage 3 fades in
+       54-66%  hold
+       66-72%  Stage 4 fades in
+       72-80%  hold
+       80-86%  takeaway appears
+       86-95%  hold (everything visible)
+       95-100% all fade out (reset)
+
+     Use case checklist:
+       ✓ Building up a system from components
+       ✓ Sequence of steps that compose into a final state
+       ✓ Showing how a result depends on a CHAIN of dependencies
+       ✗ NOT for showing how the SAME thing changes shape (use 3-phase or sweeper)
+       ✗ NOT for instantaneous transformations (use a single frame)
+     ============================================================================ -->

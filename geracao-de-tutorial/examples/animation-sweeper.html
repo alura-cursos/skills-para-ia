@@ -1,0 +1,269 @@
+<!--
+  EXAMPLE: Sweeper + follower animation pattern
+  ==============================================
+  Demonstrates how to author an animation where a control parameter sweeps
+  across an axis, with one or more dependent quantities tracking the sweep.
+
+  Concrete example: a technology adoption S-curve. The growth rate r sweeps
+  from 0.5 → 2.0 → 0.5. The drawn S-curves morph as r changes — from a slow,
+  gradual rollout to a fast, near-overnight market saturation. A vertical
+  "you are here" tracker shows the current r value.
+
+  Why this pattern matters: most "show me how X depends on Y" animations
+  benefit from a single control variable (the sweeper) and one or more
+  derived quantities. The reader's eye follows the sweeper; the math
+  unfolds in the derived elements.
+
+  Bear traps it avoids:
+    B.7  All coordinates derived from math
+    B.8  Sweeper and follower dots use matching keySplines for sync
+   B.10  Light-mode contrast (uses CSS var indirection so hex can swap)
+-->
+
+<figure role="figure" aria-labelledby="anim-sigmoid-cap">
+<svg role="img"
+     aria-labelledby="anim-sigmoid-title anim-sigmoid-desc"
+     viewBox="0 0 820 340"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="anim-sigmoid-title">Adoption S-curve sweep: how the growth rate shapes market saturation</title>
+  <desc id="anim-sigmoid-desc">An animation showing a technology adoption S-curve — the cumulative
+  percent of a market that has adopted a product — for time t ∈ [-4, 4] years from the tipping
+  point, as the growth rate r sweeps continuously from 0.5 (slow, gradual rollout) up to 2.0
+  (fast, near-overnight saturation) and back. A vertical tracker line at the bottom indicates the
+  current growth rate. A readout panel on the right shows the percent of the market adopted at +2
+  and -2 years for the current growth rate.</desc>
+
+  <style>
+    /* Scoped variables. */
+    #anim-sigmoid-fig {
+      --bg: #0f1117;     --panel: #161922;    --panel-2: #1c2030;
+      --text: #e6e8ee;   --muted: #8d94a8;    --line: #2a2f42;
+      --curve: #7aa2f7;  --tracker: #fbbf24;  --rate-low: #06b6d4;
+      --rate-mid: #7aa2f7; --rate-high: #ec4899;
+    }
+
+    #anim-sigmoid-fig .prose { font-family: system-ui, sans-serif; fill: var(--text); font-size: 12px; }
+    #anim-sigmoid-fig .muted { font-family: system-ui, sans-serif; fill: var(--muted); font-size: 11px; }
+    #anim-sigmoid-fig .mono  { font-family: ui-monospace, monospace; fill: var(--text); font-size: 12px; }
+    #anim-sigmoid-fig .title { font-family: system-ui, sans-serif; fill: var(--text); font-size: 13px; font-weight: 600; }
+
+    /* SWEEPER: vertical tracker line moves horizontally over a 6s cycle.
+       Position maps to growth rate r:
+         0%:   r = 0.5  (x = 80)
+         50%:  r = 2.0  (x = 460)
+         100%: r = 0.5  (x = 80)
+       Range: 460 - 80 = 380 px maps to r range [0.5, 2.0]. */
+    @keyframes sweep {
+      0%   { transform: translateX(0px); }
+      50%  { transform: translateX(380px); }
+      100% { transform: translateX(0px); }
+    }
+    #anim-sigmoid-fig .sweeper {
+      animation: sweep 6s ease-in-out infinite;
+      transform-box: fill-box;
+    }
+
+    /* Three S-curves cross-fade based on the sweeper position.
+       Curve at r=0.5  visible 0-15% and 85-100%   (sweeper at left)
+       Curve at r=1.0  visible 22-40% and 60-78%   (sweeper at center going each direction)
+       Curve at r=2.0  visible 45-55%              (sweeper at right) */
+    @keyframes curve-low {
+      0%, 13%   { opacity: 0.95; }
+      19%, 81%  { opacity: 0; }
+      87%, 100% { opacity: 0.95; }
+    }
+    @keyframes curve-mid {
+      0%, 19%   { opacity: 0; }
+      25%, 40%  { opacity: 0.95; }
+      45%, 55%  { opacity: 0; }
+      60%, 75%  { opacity: 0.95; }
+      81%, 100% { opacity: 0; }
+    }
+    @keyframes curve-high {
+      0%, 40%   { opacity: 0; }
+      47%, 53%  { opacity: 0.95; }
+      60%, 100% { opacity: 0; }
+    }
+    #anim-sigmoid-fig .c-low  { animation: curve-low  6s ease-in-out infinite; }
+    #anim-sigmoid-fig .c-mid  { animation: curve-mid  6s ease-in-out infinite; opacity: 0; }
+    #anim-sigmoid-fig .c-high { animation: curve-high 6s ease-in-out infinite; opacity: 0; }
+
+    /* Readouts: 3 stacked text values for adopted % at +2 yr, one shown per phase */
+    @keyframes read-low  { 0%,13% { opacity: 1; } 19%,81% { opacity: 0; } 87%,100% { opacity: 1; } }
+    @keyframes read-mid  { 0%,19% { opacity: 0; } 25%,40% { opacity: 1; } 45%,55% { opacity: 0; }
+                           60%,75% { opacity: 1; } 81%,100% { opacity: 0; } }
+    @keyframes read-high { 0%,40% { opacity: 0; } 47%,53% { opacity: 1; } 60%,100% { opacity: 0; } }
+    #anim-sigmoid-fig .r-low  { animation: read-low  6s ease-in-out infinite; }
+    #anim-sigmoid-fig .r-mid  { animation: read-mid  6s ease-in-out infinite; opacity: 0; }
+    #anim-sigmoid-fig .r-high { animation: read-high 6s ease-in-out infinite; opacity: 0; }
+  </style>
+
+  <g id="anim-sigmoid-fig">
+
+    <!-- Title strip -->
+    <text x="20" y="24" class="title">Adoption S-curve — sweep growth rate r from 0.5 to 2.0</text>
+
+    <!-- ===================== PLOT AREA ===================== -->
+    <!-- x-axis from x=80 (time=-4) to x=620 (time=+4); 540 px wide.
+         Center (time=0, the tipping point) at x=350.
+         y-axis from y=270 (adopted=0) to y=80 (adopted=1); 190 px high.
+         Center y=175 (adopted=0.5, half the market).
+         Scale: x_screen = 350 + time * 67.5; y_screen = 270 - adopted * 190 -->
+
+    <!-- Plot box -->
+    <rect x="60" y="70" width="580" height="220" rx="6" fill="var(--panel-2)"/>
+
+    <!-- y-axis ticks -->
+    <line x1="80" y1="80" x2="80" y2="270" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="74" y="84" text-anchor="end" class="muted">100%</text>
+    <line x1="78" y1="175" x2="82" y2="175" stroke="var(--line)"/>
+    <text x="74" y="179" text-anchor="end" class="muted">50%</text>
+    <text x="74" y="274" text-anchor="end" class="muted">0</text>
+    <text x="50" y="175" text-anchor="middle" transform="rotate(-90, 50, 175)" class="muted">% of market adopted</text>
+
+    <!-- x-axis ticks -->
+    <line x1="80" y1="270" x2="620" y2="270" stroke="var(--line)" stroke-width="1.5"/>
+    <line x1="350" y1="268" x2="350" y2="272" stroke="var(--line)"/>
+    <text x="80"  y="287" text-anchor="middle" class="muted">-4</text>
+    <text x="215" y="287" text-anchor="middle" class="muted">-2</text>
+    <text x="350" y="287" text-anchor="middle" class="muted">0</text>
+    <text x="485" y="287" text-anchor="middle" class="muted">+2</text>
+    <text x="620" y="287" text-anchor="middle" class="muted">+4</text>
+    <text x="350" y="305" text-anchor="middle" class="muted">time (years from tipping point)</text>
+
+    <!-- ===================== CURVES =====================
+         For each curve we sample 21 points (t = -4 to +4, step 0.4).
+         adopted(r·t) = 1 / (1 + exp(-r·t))   [logistic S-curve]
+         x_screen = 350 + t * 67.5
+         y_screen = 270 - adopted * 190
+    -->
+
+    <!-- r = 0.5: slow, gradual rollout (shallow S-curve)
+         At t=-4: adopted=0.119 → y=247.3
+         At t=-2: adopted=0.269 → y=218.9
+         At t=0:  adopted=0.5   → y=175
+         At t=+2: adopted=0.731 → y=131.1
+         At t=+4: adopted=0.881 → y=102.7
+    -->
+    <path class="c-low"
+          d="M 80,247 Q 215,219 350,175 Q 485,131 620,103"
+          stroke="var(--rate-low)" stroke-width="3" fill="none"/>
+
+    <!-- r = 1.0: typical rollout (standard S-curve)
+         At t=-4: adopted=0.018 → y=266.6
+         At t=-2: adopted=0.119 → y=247.4
+         At t=0:  adopted=0.5   → y=175
+         At t=+2: adopted=0.881 → y=102.7
+         At t=+4: adopted=0.982 → y=83.4
+    -->
+    <path class="c-mid"
+          d="M 80,267 Q 215,247 350,175 Q 485,103 620,83"
+          stroke="var(--rate-mid)" stroke-width="3" fill="none"/>
+
+    <!-- r = 2.0: fast, near-overnight saturation (steep S-curve)
+         At t=-4: adopted ≈ 0.0003 → y ≈ 270
+         At t=-2: adopted = 0.018  → y = 266.6
+         At t=0:  adopted = 0.5    → y = 175
+         At t=+2: adopted = 0.982  → y = 83.4
+         At t=+4: adopted ≈ 0.9997 → y ≈ 80
+    -->
+    <path class="c-high"
+          d="M 80,270 Q 215,267 350,175 Q 485,83 620,80"
+          stroke="var(--rate-high)" stroke-width="3" fill="none"/>
+
+    <!-- ===================== READOUT PANEL ===================== -->
+    <g transform="translate(660, 100)">
+      <rect x="0" y="0" width="145" height="135" rx="6" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="12" y="22" class="muted">readout at +2 yr</text>
+
+      <text x="12" y="50" class="mono">+2 yr:</text>
+      <g x="80" y="50">
+        <text class="mono r-low"  x="80" y="50" fill="var(--rate-low)">73%</text>
+        <text class="mono r-mid"  x="80" y="50" fill="var(--rate-mid)">88%</text>
+        <text class="mono r-high" x="80" y="50" fill="var(--rate-high)">98%</text>
+      </g>
+
+      <text x="12" y="78" class="mono">-2 yr:</text>
+      <g>
+        <text class="mono r-low"  x="80" y="78" fill="var(--rate-low)">27%</text>
+        <text class="mono r-mid"  x="80" y="78" fill="var(--rate-mid)">12%</text>
+        <text class="mono r-high" x="80" y="78" fill="var(--rate-high)">2%</text>
+      </g>
+
+      <line x1="12" y1="92" x2="135" y2="92" stroke="var(--line)"/>
+
+      <text x="12" y="112" class="mono">rate r =</text>
+      <g>
+        <text class="mono r-low"  x="78" y="112" fill="var(--rate-low)" font-weight="600">0.5</text>
+        <text class="mono r-mid"  x="78" y="112" fill="var(--rate-mid)" font-weight="600">1.0</text>
+        <text class="mono r-high" x="78" y="112" fill="var(--rate-high)" font-weight="600">2.0</text>
+      </g>
+
+      <text x="12" y="130" class="muted r-low">→ slow rollout</text>
+      <text x="12" y="130" class="muted r-mid">→ typical</text>
+      <text x="12" y="130" class="muted r-high">→ viral</text>
+    </g>
+
+    <!-- ===================== SWEEPER ===================== -->
+    <!-- Bottom r-axis showing the swept growth rate -->
+    <text x="80" y="324" class="muted">r = 0.5</text>
+    <text x="350" y="324" class="muted" text-anchor="middle">r = 1.0</text>
+    <text x="620" y="324" class="muted" text-anchor="end">r = 2.0</text>
+
+    <!-- Vertical tracker line + dot. Base position: x=80, animates 0→380 px right. -->
+    <g class="sweeper">
+      <line x1="80" y1="305" x2="80" y2="315" stroke="var(--tracker)" stroke-width="2"/>
+      <circle cx="80" cy="310" r="5" fill="var(--tracker)" stroke="var(--bg)" stroke-width="1.5"/>
+    </g>
+
+  </g>
+</svg>
+
+<figcaption id="anim-sigmoid-cap">
+  <strong>Animation:</strong> sweep the growth rate <em>r</em> across <code>[0.5, 2.0]</code> and
+  watch the adoption S-curve morph from a slow, gradual rollout into a fast, near-overnight market
+  saturation. The reader sees r as a continuous control variable; the curves and readouts are
+  derived. This is the "sweeper + follower" pattern — use it whenever your concept has one knob
+  and one or more outputs that respond to it.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+
+     The sweeper + follower pattern in 5 rules:
+
+     1. Define the control variable on its own axis (here: r at the bottom).
+        Animate a tracker (line + dot) across that axis with CSS @keyframes.
+
+     2. Compute the dependent quantities for 3-5 "anchor" values of the
+        control variable. (Here: 3 anchors — r = 0.5, 1.0, 2.0.)
+
+     3. Pre-render each anchor as a separate visible element (curve, dot,
+        readout). Use opacity @keyframes to cross-fade between them, timed
+        to match the sweeper's position.
+
+     4. NEVER use SMIL <animate attributeName="textContent"> — it's invalid.
+        Use stacked <text> elements with CSS fade instead. (Bear trap B.2.)
+
+     5. If multiple dependent quantities should track in lock-step, ALL of
+        them share the SAME keyframe percentages (the "phase boundaries").
+        Don't let one dependent fade before another — it looks broken.
+
+     Math derivation (kept as comments inside the SVG for verifiability):
+       adopted(r·t) = 1 / (1 + exp(-r·t))   [logistic S-curve; t = years from tipping point]
+       r=0.5, t=2:  1/(1+exp(-1.0)) = 1/(1+0.368) = 0.731  → 73% adopted
+       r=1.0, t=2:  1/(1+exp(-2.0)) = 1/(1+0.135) = 0.881  → 88% adopted
+       r=2.0, t=2:  1/(1+exp(-4.0)) = 1/(1+0.018) = 0.982  → 98% adopted
+
+     Coordinate mapping:
+       x_screen = 350 + t_math * 67.5   (time axis from -4 to +4 over 540 px)
+       y_screen = 270 - adopted * 190   (adoption axis from 0 to 1 over 190 px)
+
+     Every coordinate in the path elements above can be regenerated from these
+     formulas. This is the discipline: NO magic numbers, every position derives
+     from the math. (Bear trap B.7.)
+     ============================================================================ -->

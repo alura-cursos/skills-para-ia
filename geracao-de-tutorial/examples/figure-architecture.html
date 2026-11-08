@@ -1,0 +1,180 @@
+<!--
+  EXAMPLE: Architecture diagram (boxes + arrows + swimlanes)
+  ===========================================================
+  Static figure showing system components and the connections between them.
+  Used for system tutorials, distributed system explanations, or any "data
+  flows through these components" story.
+
+  Concrete example: a 3-tier ML model-serving stack — load balancer routing
+  requests to model replicas, each backed by a shared model-weights cache.
+  Includes labeled data flow arrows and a small annotation showing latency
+  at each hop.
+-->
+
+<figure role="figure" aria-labelledby="fig-arch-cap" aria-describedby="fig-arch-desc">
+<svg role="img"
+     aria-labelledby="fig-arch-title fig-arch-desc"
+     viewBox="0 0 820 340"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-arch-title">Model serving stack: load balancer → replicas → weights cache</title>
+  <desc id="fig-arch-desc">A 3-tier architecture diagram. Top tier: a load balancer (yellow box) receives
+    incoming HTTP requests from the left. Middle tier: 3 model replica boxes (green) below the load balancer,
+    each connected by labeled arrows showing the request distribution. Bottom tier: a shared weights cache
+    (blue box) connected to all 3 replicas by dashed arrows indicating they all read from it. Latency
+    annotations: load balancer adds ~2ms, model inference ~150ms, cache hits ~5ms. A side panel on the right
+    shows the failure modes: if cache is cold, replicas pay full weights-load (~3s); if a replica crashes,
+    the load balancer reroutes within 1s.</desc>
+
+  <style>
+    #fig-arch-svg .box      { stroke-width: 2; rx: 6; }
+    #fig-arch-svg .box-lb   { fill: #1c2030; stroke: #fbbf24; }
+    #fig-arch-svg .box-rep  { fill: #1c2030; stroke: #10b981; }
+    #fig-arch-svg .box-cache{ fill: #1c2030; stroke: #7aa2f7; }
+    #fig-arch-svg .box-failure { fill: #1c2030; stroke: #ef4444; stroke-dasharray: 4 4; }
+    #fig-arch-svg .arr   { stroke: #8d94a8; stroke-width: 1.5; fill: none; }
+    #fig-arch-svg .arr-c { stroke: #7aa2f7; stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; }
+    #fig-arch-svg .title { font-family: system-ui, sans-serif; fill: #e6e8ee; font-size: 13px; font-weight: 600; }
+    #fig-arch-svg .lbl   { font-family: system-ui, sans-serif; fill: #e6e8ee; font-size: 12px; }
+    #fig-arch-svg .muted { font-family: system-ui, sans-serif; fill: #8d94a8; font-size: 11px; }
+    #fig-arch-svg .mono  { font-family: ui-monospace, monospace; fill: #fbbf24; font-size: 11px; }
+  </style>
+
+  <defs>
+    <marker id="arr-arch" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8d94a8"/>
+    </marker>
+    <marker id="arr-arch-c" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7aa2f7"/>
+    </marker>
+  </defs>
+
+  <g id="fig-arch-svg">
+
+    <!-- Title -->
+    <text x="20" y="28" class="title">ML inference stack — 3-tier serving architecture</text>
+
+    <!-- =================== TIER 1: load balancer =================== -->
+    <text x="20" y="68" class="muted">tier 1 — request routing</text>
+    <rect class="box box-lb" x="320" y="48" width="180" height="50"/>
+    <text x="410" y="72" text-anchor="middle" class="title" fill="#fbbf24">Load balancer</text>
+    <text x="410" y="88" text-anchor="middle" class="muted">round-robin + health check</text>
+
+    <!-- Incoming request arrow -->
+    <line class="arr" x1="180" y1="73" x2="316" y2="73" marker-end="url(#arr-arch)"/>
+    <text x="240" y="65" text-anchor="middle" class="mono">HTTP request</text>
+
+    <!-- =================== TIER 2: model replicas =================== -->
+    <text x="20" y="155" class="muted">tier 2 — model inference</text>
+
+    <!-- 3 replicas in a row -->
+    <rect class="box box-rep" x="140" y="138" width="160" height="56"/>
+    <text x="220" y="160" text-anchor="middle" class="title" fill="#10b981">Replica 1</text>
+    <text x="220" y="178" text-anchor="middle" class="mono">GPU 0, 80GB</text>
+
+    <rect class="box box-rep" x="330" y="138" width="160" height="56"/>
+    <text x="410" y="160" text-anchor="middle" class="title" fill="#10b981">Replica 2</text>
+    <text x="410" y="178" text-anchor="middle" class="mono">GPU 1, 80GB</text>
+
+    <rect class="box box-rep" x="520" y="138" width="160" height="56"/>
+    <text x="600" y="160" text-anchor="middle" class="title" fill="#10b981">Replica 3</text>
+    <text x="600" y="178" text-anchor="middle" class="mono">GPU 2, 80GB</text>
+
+    <!-- Routing arrows from load balancer down to replicas -->
+    <path class="arr" d="M 380,98 Q 380,118 220,138" marker-end="url(#arr-arch)"/>
+    <path class="arr" d="M 410,98 L 410,138" marker-end="url(#arr-arch)"/>
+    <path class="arr" d="M 440,98 Q 440,118 600,138" marker-end="url(#arr-arch)"/>
+
+    <!-- =================== TIER 3: weights cache =================== -->
+    <text x="20" y="245" class="muted">tier 3 — shared state</text>
+    <rect class="box box-cache" x="280" y="228" width="260" height="50"/>
+    <text x="410" y="252" text-anchor="middle" class="title" fill="#7aa2f7">Weights cache</text>
+    <text x="410" y="268" text-anchor="middle" class="muted">shared NFS, lazy-loaded</text>
+
+    <!-- Replica → cache arrows (dashed = read-only) -->
+    <path class="arr-c" d="M 220,194 L 350,228" marker-end="url(#arr-arch-c)"/>
+    <path class="arr-c" d="M 410,194 L 410,228" marker-end="url(#arr-arch-c)"/>
+    <path class="arr-c" d="M 600,194 L 470,228" marker-end="url(#arr-arch-c)"/>
+
+    <!-- =================== ANNOTATIONS =================== -->
+    <!-- Latency budget on the right -->
+    <g transform="translate(700, 138)">
+      <rect x="0" y="0" width="105" height="120" rx="6" fill="#1c2030" stroke="#2a2f42"/>
+      <text x="10" y="20" class="muted" font-size="10">latency budget</text>
+
+      <text x="10" y="42" class="mono" fill="#fbbf24">LB</text>
+      <text x="50" y="42" class="lbl" font-size="11">≈ 2ms</text>
+
+      <text x="10" y="64" class="mono" fill="#10b981">replica</text>
+      <text x="50" y="64" class="lbl" font-size="11">≈ 150ms</text>
+
+      <text x="10" y="86" class="mono" fill="#7aa2f7">cache</text>
+      <text x="50" y="86" class="lbl" font-size="11">≈ 5ms</text>
+
+      <line x1="10" y1="96" x2="95" y2="96" stroke="#2a2f42"/>
+
+      <text x="10" y="112" class="lbl" font-size="11" font-weight="600">total ≈ 157ms</text>
+    </g>
+
+    <!-- Failure modes (small inset) -->
+    <g transform="translate(20, 295)">
+      <rect class="box box-failure" x="0" y="0" width="780" height="38"/>
+      <text x="10" y="18" class="title" fill="#ef4444" font-size="11">⚠ failure modes</text>
+      <text x="10" y="32" class="muted" font-size="11">cold cache: replica pays ~3s weights-load · replica crash: LB reroutes within 1s · cache outage: all replicas fail simultaneously (SPOF — fix with replicated cache)</text>
+    </g>
+
+  </g>
+</svg>
+
+<figcaption id="fig-arch-cap">
+  <strong>Figure N.</strong> Three-tier model serving architecture. Requests enter through the
+  yellow load balancer, get routed to one of three green replicas, each backed by the shared
+  blue weights cache. Dashed arrows indicate read-only access. The latency budget panel shows
+  where time is spent; the failure-modes panel below lists what breaks when.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The architecture diagram pattern in 6 rules:
+
+     1. USE TIER LABELS ("tier 1 — request routing") to make the layout meaningful.
+        Without them, the boxes look arbitrary. With them, the reader knows what to read top-down.
+
+     2. COLOR-CODE BY ROLE.
+        Yellow for control/routing, green for compute, blue for state/storage, red for failure.
+        Consistent across all your architecture figures.
+
+     3. SOLID arrows = synchronous; DASHED arrows = async or read-only.
+        Tells the reader the timing semantics at a glance.
+
+     4. ANNOTATE LATENCY EXPLICITLY.
+        A small side panel with the latency budget grounds the abstraction in numbers.
+        Architecture without numbers is hand-waving.
+
+     5. SHOW FAILURE MODES.
+        Most architecture diagrams omit "what can break." A bottom strip listing 2-3
+        failure modes turns the figure into a teaching tool, not just documentation.
+
+     6. KEEP THE LAYOUT 2D, NOT ISOMETRIC.
+        Isometric 3D boxes look fancy but force the reader to mentally project. Top-down
+        2D boxes with labeled tiers are unambiguously parseable.
+
+     Use case checklist:
+       ✓ Showing data flow through a system
+       ✓ Explaining component interaction
+       ✓ Teaching system-design patterns
+       ✗ NOT for showing state changes over time (use sequential reveal or 3-phase)
+       ✗ NOT for trees (use figure-lineage-tree.html)
+       ✗ NOT for tabular comparisons (use figure-comparison.html)
+
+     Common architecture patterns to reuse:
+       - Layered (this example): tiers stacked top-to-bottom
+       - Swimlane: vertical lanes per service, time flowing left-to-right
+       - Hub-and-spoke: center node with peripheral connections
+       - Pipeline: linear flow with intermediate buffers (use sequential reveal for the animated version)
+     ============================================================================ -->

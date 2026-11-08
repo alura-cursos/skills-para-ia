@@ -1,0 +1,176 @@
+<!--
+  EXAMPLE: Flowchart / decision tree
+  ====================================
+  Static figure showing branching decision logic. Each decision is a diamond;
+  each action is a rectangle; arrows are labeled with the decision outcome.
+
+  Concrete example: choosing which model serving strategy to use based on
+  request rate, latency requirements, and budget. A 4-decision tree with
+  6 possible outcomes.
+
+  Use when:
+    - Teaching a multi-branch decision process
+    - Documenting how a system makes routing/dispatch choices
+    - Algorithm flow with conditional branches
+-->
+
+<figure role="figure" aria-labelledby="fig-flow-cap" aria-describedby="fig-flow-desc">
+<svg role="img"
+     aria-labelledby="fig-flow-title fig-flow-desc"
+     viewBox="0 0 820 460"
+     style="width:100%; height:auto; max-width:820px; background:#161922; border:1px solid #2a2f42; border-radius:8px;">
+
+  <title id="fig-flow-title">Serving strategy decision tree</title>
+  <desc id="fig-flow-desc">A flowchart with 4 decision diamonds and 6 outcome boxes. Top diamond asks
+    "QPS > 1000?". Yes branch goes to "Multi-replica + autoscaling" (green outcome). No branch goes
+    to next decision: "p99 latency requirement?". Less than 100ms branches to next decision: "Budget
+    > $500/mo?". Yes → "GPU inference (dedicated)" (yellow). No → "Quantized CPU inference" (orange).
+    Greater than 100ms latency branches to "Async + queue" (green). The shipped recommendation is
+    bordered in yellow.</desc>
+
+  <style>
+    #fig-flow-svg .start    { fill: #1c2030; stroke: #7aa2f7; stroke-width: 2; rx: 25; ry: 25; }
+    #fig-flow-svg .decision { fill: #1c2030; stroke: #fbbf24; stroke-width: 2; }
+    #fig-flow-svg .outcome-good { fill: #1c2030; stroke: #10b981; stroke-width: 2; rx: 8; }
+    #fig-flow-svg .outcome-ok   { fill: #1c2030; stroke: #fbbf24; stroke-width: 2; rx: 8; }
+    #fig-flow-svg .outcome-cost { fill: #1c2030; stroke: #fb923c; stroke-width: 2; rx: 8; }
+    #fig-flow-svg .recommended  { fill: none; stroke: #fbbf24; stroke-width: 3; stroke-dasharray: 5 3; }
+    #fig-flow-svg .arr  { stroke: #8d94a8; stroke-width: 1.5; fill: none; }
+    #fig-flow-svg .yes  { fill: #10b981; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 600; }
+    #fig-flow-svg .no   { fill: #ef4444; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 600; }
+    #fig-flow-svg .lbl  { font-family: system-ui, sans-serif; font-size: 13px; fill: #e6e8ee; font-weight: 500; }
+    #fig-flow-svg .muted { font-family: system-ui, sans-serif; font-size: 11px; fill: #8d94a8; }
+    #fig-flow-svg .title { font-family: system-ui, sans-serif; font-size: 13px; fill: #e6e8ee; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="arr-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8d94a8"/>
+    </marker>
+  </defs>
+
+  <g id="fig-flow-svg">
+
+    <text x="20" y="28" class="title">Choosing a serving strategy — a 4-decision tree</text>
+
+    <!-- ===================== START NODE (rounded rect) ===================== -->
+    <rect class="start" x="320" y="50" width="180" height="44"/>
+    <text x="410" y="76" text-anchor="middle" class="lbl">Need to serve a model</text>
+
+    <line class="arr" x1="410" y1="94" x2="410" y2="114" marker-end="url(#arr-flow)"/>
+
+    <!-- ===================== DECISION 1: QPS > 1000? (diamond) ===================== -->
+    <polygon class="decision" points="410,114 510,164 410,214 310,164"/>
+    <text x="410" y="160" text-anchor="middle" class="lbl">QPS &gt; 1000?</text>
+    <text x="410" y="178" text-anchor="middle" class="muted">request rate</text>
+
+    <!-- YES branch goes right -->
+    <text x="525" y="160" class="yes">YES</text>
+    <line class="arr" x1="510" y1="164" x2="620" y2="164" marker-end="url(#arr-flow)"/>
+
+    <!-- OUTCOME 1: Multi-replica + autoscaling -->
+    <rect class="outcome-good" x="620" y="142" width="170" height="44"/>
+    <text x="705" y="164" text-anchor="middle" class="lbl">Multi-replica</text>
+    <text x="705" y="180" text-anchor="middle" class="muted">+ horizontal autoscale</text>
+
+    <!-- NO branch goes down -->
+    <text x="380" y="232" class="no">NO</text>
+    <line class="arr" x1="410" y1="214" x2="410" y2="244" marker-end="url(#arr-flow)"/>
+
+    <!-- ===================== DECISION 2: p99 latency < 100ms? ===================== -->
+    <polygon class="decision" points="410,244 510,294 410,344 310,294"/>
+    <text x="410" y="288" text-anchor="middle" class="lbl">p99 latency</text>
+    <text x="410" y="304" text-anchor="middle" class="lbl">&lt; 100ms?</text>
+
+    <!-- NO branch (latency tolerant) goes left -->
+    <text x="285" y="290" class="no">NO</text>
+    <line class="arr" x1="310" y1="294" x2="200" y2="294" marker-end="url(#arr-flow)"/>
+
+    <!-- OUTCOME 2: Async + queue -->
+    <rect class="outcome-good" x="30" y="272" width="170" height="44"/>
+    <text x="115" y="294" text-anchor="middle" class="lbl">Async + queue</text>
+    <text x="115" y="310" text-anchor="middle" class="muted">batch jobs / SQS</text>
+
+    <!-- YES branch (latency-critical) goes down -->
+    <text x="425" y="362" class="yes">YES</text>
+    <line class="arr" x1="410" y1="344" x2="410" y2="374" marker-end="url(#arr-flow)"/>
+
+    <!-- ===================== DECISION 3: Budget > $500/mo? ===================== -->
+    <polygon class="decision" points="410,374 510,414 410,454 310,414"/>
+    <text x="410" y="410" text-anchor="middle" class="lbl">Budget</text>
+    <text x="410" y="426" text-anchor="middle" class="lbl">&gt; $500/mo?</text>
+
+    <!-- YES branch (budget) goes right -->
+    <text x="525" y="410" class="yes">YES</text>
+    <line class="arr" x1="510" y1="414" x2="620" y2="414" marker-end="url(#arr-flow)"/>
+
+    <!-- OUTCOME 3: GPU inference (recommended) -->
+    <rect class="outcome-ok" x="620" y="392" width="170" height="44"/>
+    <text x="705" y="414" text-anchor="middle" class="lbl">GPU inference</text>
+    <text x="705" y="430" text-anchor="middle" class="muted">(dedicated)</text>
+
+    <!-- Recommended border around OUTCOME 3 -->
+    <rect class="recommended" x="615" y="387" width="180" height="54"/>
+    <text x="800" y="385" text-anchor="end" class="muted" fill="#fbbf24" font-style="italic">← this tutorial's pick</text>
+
+    <!-- NO branch (no budget) goes left -->
+    <text x="290" y="410" class="no">NO</text>
+    <line class="arr" x1="310" y1="414" x2="200" y2="414" marker-end="url(#arr-flow)"/>
+
+    <!-- OUTCOME 4: Quantized CPU -->
+    <rect class="outcome-cost" x="30" y="392" width="170" height="44"/>
+    <text x="115" y="414" text-anchor="middle" class="lbl">Quantized CPU</text>
+    <text x="115" y="430" text-anchor="middle" class="muted">8-bit / 4-bit</text>
+
+  </g>
+</svg>
+
+<figcaption id="fig-flow-cap">
+  <strong>Figure N.</strong> Decision tree for choosing a serving strategy. Diamonds are decisions
+  (yellow border), rounded rects are outcomes (green = no compromise, orange = budget-constrained).
+  The dashed yellow border around the GPU-inference outcome marks the path this tutorial documents.
+  The "QPS &gt; 1000?" decision short-circuits to autoscaling — the others kick in only at moderate
+  load.
+</figcaption>
+</figure>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The flowchart pattern in 5 rules:
+
+     1. DIAMOND = decision, ROUNDED RECT = start/end, RECT = action/outcome.
+        These are standard flowchart conventions. Don't reinvent them.
+
+     2. ALWAYS LABEL THE YES/NO BRANCHES.
+        Green "YES", red "NO" on every diamond's outgoing arrows. Color-codes the
+        decision outcome and prevents the reader from guessing.
+
+     3. PREFER VERTICAL TOP-DOWN LAYOUT.
+        Reader's eye flows top-to-bottom by default. Branch SIDEWAYS for "happy path
+        diverges to short-circuit" outcomes; vertical for "main flow continues".
+
+     4. BORDER THE RECOMMENDED PATH.
+        Most flowcharts implicitly say "many options exist" but the tutorial usually
+        documents one specific path. Make it visually obvious.
+
+     5. COLOR-CODE OUTCOME QUALITY.
+        Green = optimal, yellow = acceptable trade-off, orange = budget-constrained,
+        red = fallback / undesirable. Lets the reader assess all leaf options at a glance.
+
+     Use case checklist:
+       ✓ Choosing among algorithm variants based on input properties
+       ✓ Routing/dispatch logic
+       ✓ Error-handling decision trees
+       ✓ Configuration-selection flowcharts (which model / serving strategy / etc.)
+       ✗ NOT for time series (use figure-trajectory.html)
+       ✗ NOT for tree-shaped data with NO decisions (use figure-lineage-tree.html)
+       ✗ NOT for graphs with cycles (use figure-network.html)
+
+     EXTENSIONS:
+       - Add complexity labels under each outcome (e.g., "$80/mo · 50ms p99")
+       - Use horizontal swim lanes if decisions group by actor/system
+       - Add a "wrong path" red-X marker on outcomes that someone might be tempted toward
+         but the tutorial recommends against.
+     ============================================================================ -->

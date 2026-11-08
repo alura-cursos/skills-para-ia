@@ -1,0 +1,243 @@
+<!--
+  EXAMPLE: Section template for a recipe / methodology tutorial
+  ==============================================================
+  Adapts the 5-layer pedagogical scaffold for a STAGE in a recipe.
+  Differences from math/algorithm/architecture versions:
+
+    Layer 1 — intuition (same): plain-English goal
+    Layer 2 — GEOMETRY: KPI before/after card + pipeline-mini "you are here"
+              showing where this stage fits
+    Layer 3 — RECIPE TABLE (replaces formula): parameters with their
+              justifications + what-to-cache composition
+    Layer 4 — WORKED EXAMPLE: one specific run with real numbers (metrics,
+              trajectory, cost)
+    Layer 5 — TAKEAWAY: includes the BEAR TRAP callout (what we did wrong
+              the first time + how to avoid it)
+
+  Concrete demonstration: the Stage 1 caching layer of a web-service
+  performance-optimization recipe.
+-->
+
+<section id="sN-stage1-cache" class="section">
+
+  <h2 id="sN-stage1-cache-h">N. Stage 1: Caching — install the latency win + load resilience at once</h2>
+
+  <p class="pipeline-mini" aria-label="You are here in the pipeline">
+    <span class="step done">Stage 0: Profiled baseline</span>
+    <span class="step active">Stage 1: Caching</span>
+    <span class="step skipped">Stage 2: Rust rewrite (skipped)</span>
+    <span class="step">Stage 3: DB indexing</span>
+    <span class="step">Stage 4: CDN + pool</span>
+  </p>
+
+  <p class="callout">
+    <strong>What you'll learn:</strong> the Stage 1 read-through cache that installs the big latency
+    drop AND the peak-load resilience at once. What to cache, the TTL and key strategy, and the
+    load-test signal that tells you it worked.
+  </p>
+
+  <!-- ============================================================
+       LAYER 1: INTUITION
+       ============================================================ -->
+
+  <p>
+    Stage 1 sits between the profiled baseline (uncached, p99 850&nbsp;ms) and the DB-indexing stage
+    that will polish the miss path. <strong>Its job is to install — in one layer — everything the
+    service needs to survive load: a read-through cache, stampede protection, and negative caching.</strong>
+  </p>
+
+  <p>
+    The cache-the-right-layer principle: a single read-through cache at the object/query layer, with
+    <em>one</em> consistent key strategy, beats caching fragments per-endpoint. Fragmented caches drift
+    out of sync and leave the origin exposed on the paths you forgot. One coherent layer with
+    single-flight defends every read path simultaneously.
+  </p>
+
+  <p>
+    <strong>The headline cost:</strong> p50 actually RISES slightly at Stage 1's end
+    (120&nbsp;ms → 135&nbsp;ms). That's the price of the single-flight lock on the miss path;
+    Stage 3 will reclaim it.
+  </p>
+
+  <!-- ============================================================
+       LAYER 2: KPI before/after + pipeline position
+       ============================================================ -->
+
+  <div class="hero-kpis" style="margin-bottom: 24px;">
+    <div class="kpi-card kpi-bad">
+      <div class="kpi-label">Before Stage 1</div>
+      <div class="kpi-value">850 ms</div>
+      <div class="kpi-note">p99 at the uncached baseline</div>
+    </div>
+    <div class="kpi-card kpi-mid">
+      <div class="kpi-label">After Stage 1 (p50)</div>
+      <div class="kpi-value">135 ms</div>
+      <div class="kpi-note">+15 ms — single-flight overhead (expected)</div>
+    </div>
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">Peak resilience</div>
+      <div class="kpi-value">+19.5pp</div>
+      <div class="kpi-note">error at 5k req/s: 22% → 2.5% (the headline gain)</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LAYER 3: RECIPE TABLE
+       ============================================================ -->
+
+  <h3>What to cache (read distribution)</h3>
+
+  <table>
+    <caption>Cache buckets by share of read traffic. The inventory bucket uses a short TTL because price/stock must stay near-real-time; everything else tolerates a 5-minute window.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Bucket</th>
+        <th scope="col">Share of reads</th>
+        <th scope="col">Key strategy</th>
+        <th scope="col">Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Product detail</td>
+        <td>45%</td>
+        <td><code>product:{id}:v3</code></td>
+        <td>highest read volume</td>
+      </tr>
+      <tr>
+        <td>Category listing</td>
+        <td>25%</td>
+        <td><code>cat:{id}:page:{n}:v3</code></td>
+        <td>high-traffic browse</td>
+      </tr>
+      <tr>
+        <td>Search results</td>
+        <td>15%</td>
+        <td><code>search:{qhash}:v3</code></td>
+        <td>expensive to recompute</td>
+      </tr>
+      <tr>
+        <td>Inventory / price</td>
+        <td>10%</td>
+        <td><code>inv:{id}</code> (5s TTL)</td>
+        <td>freshness-sensitive</td>
+      </tr>
+      <tr>
+        <td>Static config</td>
+        <td>5%</td>
+        <td><code>config:{key}</code></td>
+        <td>rarely changes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Tuning parameters</h3>
+
+  <table>
+    <caption>Stage 1 cache parameters. Critical flags marked with ⚠ are non-negotiable — see bear traps below.</caption>
+    <thead>
+      <tr><th scope="col">Parameter</th><th scope="col">Value</th><th scope="col">Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Catalog TTL</td><td>300s</td><td>balances freshness against hit rate</td></tr>
+      <tr><td>Inventory TTL</td><td>5s ⚠</td><td>price/stock must stay near-real-time</td></tr>
+      <tr><td>Single-flight</td><td><code>on</code> ⚠</td><td>coalesces concurrent misses — prevents stampede (see bear trap)</td></tr>
+      <tr><td>Stale-while-revalidate</td><td>30s</td><td>serve the stale value during an async refresh</td></tr>
+      <tr><td>Max entries</td><td>500k, LRU</td><td>fits the 13 GB cache node</td></tr>
+      <tr><td>Negative caching</td><td>60s</td><td>cache 404s so missing IDs don't hammer the origin</td></tr>
+      <tr><td>Key version suffix</td><td><code>:v3</code> ⚠</td><td>bump to invalidate the whole namespace on a schema change</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================
+       LAYER 4: WORKED EXAMPLE — one specific run
+       ============================================================ -->
+
+  <div class="callout worked-example">
+    <p class="callout-title"><strong>Worked example: the actual Stage 1 caching rollout</strong></p>
+
+    <p><strong>Setup.</strong> One <code>cache.r6g.large</code> node (13 GB). Read-through cache in the
+    app tier, single-flight via an in-process request-coalescing map. Rolled out as a canary by traffic
+    percentage behind a feature flag.</p>
+
+    <p><strong>Execution.</strong> 0% → 25% → 60% → 100% over 40 minutes, load-testing at 5,000 req/s at
+    each step. Watch hit rate climb and error-at-peak fall.</p>
+
+    <table>
+      <caption>Load-test points during the canary rollout</caption>
+      <thead>
+        <tr><th scope="col">Traffic on cache</th><th scope="col">p99 (ms)</th><th scope="col">p50 (ms)</th><th scope="col">Error @ 5k req/s</th><th scope="col">Hit rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0% (baseline)</td><td>850</td><td>120</td><td>22.0%</td><td>—</td></tr>
+        <tr><td>25%</td><td>410</td><td>126</td><td>11.0%</td><td>88%</td></tr>
+        <tr><td>60%</td><td>270</td><td>131</td><td>5.0%</td><td>92%</td></tr>
+        <tr><td>100% (final)</td><td><strong>210</strong></td><td><strong>135</strong></td><td><strong>2.5%</strong></td><td>94%</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Infra cost.</strong> +1 cache node ≈ $95/month, plus ~3% app CPU for serialization.
+    Cheap for the 4× p99 drop and 9× fewer peak errors.</p>
+
+    <p><strong>Critical sanity checks.</strong> At 25% canary, p50 rose 6&nbsp;ms (the single-flight lock)
+    while error-at-peak dropped 11pp. We expected the p50 cost and tracked hit rate climbing. If hit rate
+    hadn't passed 85% by full rollout, we would have stopped and checked key cardinality (too many unique keys → no reuse).</p>
+  </div>
+
+  <!-- ============================================================
+       LAYER 5: TAKEAWAY + BEAR TRAP (recipe-specific addition)
+       ============================================================ -->
+
+  <p><strong>Takeaway.</strong> Stage 1 installs load resilience (the +19.5pp peak-error gain that
+  §11 will trace through to Stage 4's 0.9% error) and costs a small slice of p50 that Stage 3 reclaims.
+  <em>The p50 bump is the goal</em>, not a problem to fix — single-flight REQUIRES a request to sometimes
+  wait for the in-flight refresh instead of stampeding the origin.</p>
+
+  <div class="callout warning">
+    <p class="callout-title"><strong>⚠ Bear trap: cache stampede at TTL expiry</strong></p>
+    <p>Without single-flight, every 300&nbsp;s the p99 spikes to ~900&nbsp;ms for a few seconds — a
+    latency sawtooth synced to the TTL. Cause: when a hot key expires, all concurrent requests miss
+    <em>simultaneously</em> and hit the database together → DB CPU pegs at 100% → the request queue
+    backs up → one slow query cascades into a wave of timeouts.</p>
+    <p><strong>Fix:</strong> turn on <code>single-flight</code> (one request recomputes the value; the rest
+    await its result) plus <code>stale-while-revalidate</code> (serve the stale value during the async
+    refresh). Trade-off: once per TTL, a handful of requests pay the recompute latency. Acceptable.</p>
+  </div>
+
+  <p>You'll see this stage referenced in §[N+1] (Stage 3 DB indexing builds on the cache's miss path —
+  a faster miss means a smaller stampede when one slips through) and again in §[N+2] (the ablation that
+  proved skipping Stage 1 looks better in a light-load benchmark but is catastrophically worse at peak).</p>
+
+</section>
+
+
+<!-- ============================================================================
+     COMMENTARY (read me, then delete me from your tutorial)
+     ============================================================================
+     The recipe section pattern adapts the 5 layers:
+
+     Layer 1: intuition WHY this stage exists in the pipeline.
+     Layer 2: KPI cards showing before/after + pipeline-mini for orientation.
+     Layer 3: PARAMETER TABLE + COMPOSITION TABLE (replaces formula).
+              Mark critical flags with ⚠ so the reader can spot them at a glance.
+     Layer 4: ONE SPECIFIC RUN with real metric movement + cost.
+              The trace table is the most important element — it shows the
+              concrete trajectory through the stage.
+     Layer 5: takeaway + EXPLICIT BEAR TRAP callout.
+              Recipes without bear traps are aspirational, not operational.
+              Document what you did wrong the first time + how to avoid it.
+
+     What makes recipe sections work pedagogically:
+       - The reader needs to TRUST your numbers. Show real metric points.
+       - The reader needs to KNOW THE COST. Show cost and wall-clock.
+       - The reader needs to ANTICIPATE PROBLEMS. Document the bear traps you hit.
+
+     Patterns that fit this format:
+       - Individual optimization stages (caching, indexing, CDN, pool tuning)
+       - Deployment phases (canary, staged rollout, full)
+       - Tuning recipes for a specific system or workload
+       - Data preparation pipelines
+
+     For deployment phases specifically, keep the "parameter table" as a
+     "configuration parameters" table; the rest of the pattern transfers cleanly.
+     ============================================================================ -->
